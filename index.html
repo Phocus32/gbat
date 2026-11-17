@@ -30,6 +30,9 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
       font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
@@ -46,16 +49,6 @@
     @keyframes questionSlideIn {
       from { opacity: 0; transform: translateX(18px); }
       to { opacity: 1; transform: translateX(0); }
-    }
-    @keyframes popBounce {
-      0% { transform: scale(0.95); }
-      50% { transform: scale(1.03); }
-      100% { transform: scale(1); }
-    }
-    @keyframes shakeHorizontal {
-      0%, 100% { transform: translateX(0); }
-      20%, 60% { transform: translateX(-6px); }
-      40%, 80% { transform: translateX(6px); }
     }
     @keyframes pulseGlow {
       0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.45); }
@@ -129,7 +122,13 @@
     }
     .btn-nav:hover { background: rgba(255,255,255,0.32); transform: translateY(-1px); }
 
-    .container { max-width: 1140px; margin: 24px auto; padding: 0 16px 64px; }
+    .container {
+      width: 100%;
+      max-width: 1140px;
+      margin: 24px auto;
+      padding: 0 16px 40px;
+      flex: 1;
+    }
     .card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -399,12 +398,11 @@
       color: var(--text);
       transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
     }
-    .opt-btn:hover:not(:disabled) {
+    .opt-btn:hover {
       border-color: var(--primary);
       background: var(--primary-soft);
       transform: translateX(4px);
     }
-    .opt-btn:disabled { cursor: default; }
     .opt-letter {
       width: 30px;
       height: 30px;
@@ -418,23 +416,17 @@
       flex-shrink: 0;
       transition: background 0.2s ease, color 0.2s ease;
     }
-    .opt-btn.correct {
-      border-color: var(--success);
-      background: var(--success-bg);
-      animation: popBounce 0.32s ease;
+    /* Neutral selected state during quiz — reveals score only after full submission */
+    .opt-btn.selected {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      box-shadow: 0 3px 10px rgba(29, 78, 216, 0.12);
     }
-    .opt-btn.correct .opt-letter { background: var(--success); color: #fff; }
-    .opt-btn.wrong {
-      border-color: var(--danger);
-      background: var(--danger-bg);
-      animation: shakeHorizontal 0.36s ease;
+    .opt-btn.selected .opt-letter {
+      background: var(--primary);
+      color: #fff;
     }
-    .opt-btn.wrong .opt-letter { background: var(--danger); color: #fff; }
 
-    .feedback { margin-top: 16px; padding: 15px; border-radius: 11px; display: none; animation: fadeSlideUp 0.28s ease; }
-    .feedback.show { display: block; }
-    .feedback.correct { background: var(--success-bg); border: 1px solid #86efac; color: #14532d; }
-    .feedback.wrong { background: var(--warn-bg); border: 1px solid var(--warn-border); color: #431407; }
     .solution-box {
       margin-top: 8px;
       padding-top: 8px;
@@ -456,8 +448,7 @@
     }
     .p-dot:hover { transform: scale(1.08); }
     .p-dot.active { border: 2px solid var(--primary); box-shadow: 0 0 0 2px rgba(29,78,216,0.18); }
-    .p-dot.p-correct { background: var(--success-bg); border-color: var(--success); color: var(--success); }
-    .p-dot.p-wrong { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
+    .p-dot.p-answered { background: var(--primary-soft); border-color: var(--primary-light); color: var(--primary-dark); }
     .p-dot.p-flagged::after {
       content: "";
       position: absolute;
@@ -465,19 +456,6 @@
       width: 6px; height: 6px;
       border-radius: 50%;
       background: #f59e0b;
-    }
-
-    .streak-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: #fef3c7;
-      color: #92400e;
-      border: 1px solid #fcd34d;
-      padding: 3px 10px;
-      border-radius: 999px;
-      font-size: 0.82rem;
-      font-weight: 700;
     }
 
     .review-item {
@@ -517,7 +495,7 @@
     /* Toast Notification */
     .toast-container {
       position: fixed;
-      bottom: 22px;
+      bottom: 48px;
       right: 22px;
       z-index: 999;
       display: flex;
@@ -548,6 +526,22 @@
       z-index: 998;
       pointer-events: none;
       animation: confettiFall linear forwards;
+    }
+
+    /* Global Site Footer */
+    .site-footer {
+      background: #0f172a;
+      color: #e2e8f0;
+      text-align: center;
+      padding: 14px 20px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      border-top: 3px solid var(--primary);
+      margin-top: auto;
+    }
+    .site-footer span {
+      color: #93c5fd;
     }
 
     @media print {
@@ -665,9 +659,10 @@
           <button class="btn btn-primary" id="startPracticeBtn">Start Practice Mode (Untimed)</button>
           <button class="btn btn-secondary" id="startTimedBtn">Start Exam Mode (Timed)</button>
         </div>
+        <p id="stuModeStatusNote" class="hidden" style="color:var(--muted); font-weight:600; font-size:0.88rem; margin-top:10px;"></p>
         <p id="stuExamLimitMsg" class="hidden" style="color:var(--warn); font-weight:600; font-size:0.9rem; margin-top:10px;"></p>
         <p id="stuQuizClosedMsg" class="hidden" style="color:var(--danger); font-weight:700;">
-          This assessment is currently closed by the Administrator.
+          All assessment modes are currently closed by the Administrator.
         </p>
       </div>
 
@@ -684,7 +679,7 @@
       </div>
     </section>
 
-    <!-- 2B. QUIZ RUNNER -->
+    <!-- 2B. QUIZ RUNNER (SCORE & SOLUTIONS REVEALED ONLY AFTER SUBMISSION) -->
     <section id="quizScreen" class="hidden screen-anim">
       <div class="quiz-layout">
         <div class="card" id="quizQuestionCard">
@@ -692,7 +687,7 @@
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="badge b-blue" id="qBadge">Question 1</span>
-              <span class="streak-pill" id="streakBadge">🔥 Streak: 0</span>
+              <span class="badge b-warn" id="quizModeBadge">Mode</span>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
               <button class="btn btn-outline btn-sm" id="flagQuestionBtn" title="Bookmark question to revisit">🚩 Flag</button>
@@ -702,7 +697,9 @@
           <div class="q-text" id="qText"></div>
           <div class="diagram hidden" id="qDiagram"></div>
           <div class="options" id="optionsBox"></div>
-          <div class="feedback" id="feedbackBox"></div>
+          <div style="margin-top:14px; padding:10px 14px; border-radius:9px; background:#f8fafc; border:1px solid #e2e8f0; font-size:0.86rem; color:var(--muted);">
+            🔒 Your score and step-by-step worked solutions will appear immediately after you finish and submit all questions.
+          </div>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; gap:10px; flex-wrap:wrap;">
             <button class="btn btn-secondary" id="prevBtn">← Previous</button>
             <span style="font-size:0.8rem; color:var(--muted);">Tip: Press A/B/C/D or ← / → keys</span>
@@ -711,16 +708,16 @@
         </div>
 
         <aside class="card">
-          <div style="font-weight:700; margin-bottom:8px;">Live Progress</div>
+          <div style="font-weight:700; margin-bottom:8px;">Quiz Completion</div>
           <div style="font-size:0.9rem; display:flex; justify-content:space-between; margin-bottom:4px;">
-            <span>Score:</span><strong id="sideScore">0 / 0</strong>
+            <span>Answered:</span><strong id="sideAnswered">0 / 0</strong>
           </div>
           <div style="font-size:0.9rem; display:flex; justify-content:space-between; margin-bottom:10px;">
             <span>Remaining:</span><strong id="sideRemain">0</strong>
           </div>
-          <div style="font-size:0.8rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Navigator (Orange dot = Flagged)</div>
+          <div style="font-size:0.8rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Navigator (Blue = Answered, Dot = Flagged)</div>
           <div class="palette-grid" id="paletteGrid"></div>
-          <button class="btn btn-outline btn-block" id="finishEarlyBtn" style="margin-top:16px;">Submit &amp; Finish</button>
+          <button class="btn btn-primary btn-block" id="finishEarlyBtn" style="margin-top:16px;">Submit &amp; View Score</button>
         </aside>
       </div>
     </section>
@@ -752,7 +749,7 @@
       </div>
 
       <div id="teacherNoClassWarning" class="card hidden" style="border-left:5px solid var(--warn); background:var(--warn-bg);">
-        <strong>No Classes Assigned Yet:</strong> Ask the Administrator to assign your classes (e.g., Basic 8 or Basic 9) under <em>Admin Dashboard → User Management</em> so you can view submissions and manage your class question bank.
+        <strong>No Classes Assigned Yet:</strong> Ask the Administrator to assign your classes (e.g., Basic 8 or Basic 9) under <em>Admin Dashboard → Users, Teacher Classes &amp; Excel</em> so you can view submissions and manage your class question bank.
       </div>
 
       <div class="kpi-grid">
@@ -904,13 +901,13 @@
       <div class="dash-header">
         <div>
           <h1>Administrator Dashboard</h1>
-          <span style="color:var(--muted); font-size:0.92rem;">System-wide control, teacher class assignments, Excel student import, and exam security</span>
+          <span style="color:var(--muted); font-size:0.92rem;">System-wide control, teacher class assignments, Excel student import, and mode controls</span>
         </div>
       </div>
 
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-label">Registered Students</div><div class="kpi-value" id="aKpiStudents">0</div></div>
-        <div class="kpi-card"><div class="kpi-label">Active Classes</div><div class="kpi-value" id="aKpiClasses">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Exam / Practice</div><div class="kpi-value" style="font-size:1.25rem;" id="aKpiModes">OPEN / OPEN</div></div>
         <div class="kpi-card"><div class="kpi-label">School Exam Avg</div><div class="kpi-value" id="aKpiAvg">0%</div></div>
         <div class="kpi-card"><div class="kpi-label">Roster Lock</div><div class="kpi-value" id="aKpiRoster">ON</div></div>
       </div>
@@ -918,7 +915,7 @@
       <div class="sub-tabs" id="adminTabs">
         <button class="sub-tab active" data-tab="aClasses">Classes &amp; Passwords</button>
         <button class="sub-tab" data-tab="aUsers">Users, Teacher Classes &amp; Excel</button>
-        <button class="sub-tab" data-tab="aSettings">Exam &amp; Security Controls</button>
+        <button class="sub-tab" data-tab="aSettings">Exam, Practice &amp; Security Controls</button>
         <button class="sub-tab" data-tab="aLogs">Activity Logs &amp; Backup</button>
       </div>
 
@@ -1004,15 +1001,22 @@
         </div>
       </div>
 
-      <!-- A2: Exam & Security Controls -->
+      <!-- A2: Exam, Practice & Security Controls -->
       <div class="card hidden" id="aSettings">
-        <h3 style="margin-top:0;">Assessment &amp; Anti-Cheat Security Configuration</h3>
+        <h3 style="margin-top:0;">Assessment Modes &amp; Anti-Cheat Security Configuration</h3>
         <div class="form-grid">
           <div class="field">
-            <label>Quiz Availability for Students</label>
+            <label>Exam Mode (Timed) Availability</label>
             <select id="aQuizOpenSelect">
-              <option value="true">Open (Students can take quiz)</option>
-              <option value="false">Closed (Locked for maintenance/review)</option>
+              <option value="true">Open (Students can take Timed Exam)</option>
+              <option value="false">Closed (Locked)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Practice Mode (Untimed) Availability</label>
+            <select id="aPracticeOpenSelect">
+              <option value="true">Open (Students can take Practice Mode)</option>
+              <option value="false">Closed (Locked)</option>
             </select>
           </div>
           <div class="field">
@@ -1051,7 +1055,7 @@
             </select>
           </div>
         </div>
-        <button class="btn btn-primary" id="aSaveSettingsBtn">Save Security &amp; Exam Settings</button>
+        <button class="btn btn-primary" id="aSaveSettingsBtn">Save Mode &amp; Security Settings</button>
         <span id="aSettingsSaved" style="margin-left:10px; color:var(--success); font-weight:600;"></span>
       </div>
 
@@ -1074,6 +1078,11 @@
     </section>
 
   </main>
+
+  <!-- Global Footer on All Pages -->
+  <footer class="site-footer">
+    Developed by: <span>Daniel Owusu Frimpong</span>
+  </footer>
 
   <!-- Modal for Editing Teacher Assigned Classes -->
   <div class="modal-backdrop hidden" id="editTeacherModal">
@@ -1215,10 +1224,11 @@
         questions: JSON.parse(JSON.stringify(defaultQuestions)),
         submissions: [],
         announcements: [
-          { id: "n1", targetClass: "ALL", text: "Welcome to GBAT Nov 2026 Mock Prep! Review every worked solution whenever you miss a question.", author: "Principal Admin", date: "17/11/2026" }
+          { id: "n1", targetClass: "ALL", text: "Welcome to GBAT Nov 2026 Mock Prep! Complete your assessment and review every worked solution after submission.", author: "Principal Admin", date: "17/11/2026" }
         ],
         settings: {
           quizOpen: true,
+          practiceOpen: true,
           rosterLock: true,
           maxExamAttempts: 1,
           antiCheat: true,
@@ -1313,6 +1323,7 @@
           announcements: loadedNotices,
           settings: {
             quizOpen: true,
+            practiceOpen: true,
             rosterLock: true,
             maxExamAttempts: 1,
             antiCheat: true,
@@ -1649,23 +1660,49 @@
 
       document.getElementById("stuQuizTitle").textContent = `${session.code} — GBAT Mathematics Assessment`;
       document.getElementById("stuQuizDesc").textContent =
-        `Assigned Questions for ${session.code}: ${classQs.length} | Exam Duration: ${state.settings.examMinutes} minutes. Every attempt shuffles questions and choices; wrong answers show step-by-step worked solutions.`;
+        `Assigned Questions for ${session.code}: ${classQs.length} | Exam Duration: ${state.settings.examMinutes} minutes. Complete and submit the entire quiz to view your score and step-by-step worked solutions.`;
 
-      const isOpen = state.settings.quizOpen && classQs.length > 0;
-      document.getElementById("stuQuizControls").classList.toggle("hidden", !isOpen);
-      document.getElementById("stuQuizClosedMsg").classList.toggle("hidden", isOpen);
-      if (!classQs.length && state.settings.quizOpen) {
-        document.getElementById("stuQuizClosedMsg").textContent = `No questions have been assigned to ${session.code} yet.`;
+      const examOpen = Boolean(state.settings.quizOpen);
+      const practiceOpen = state.settings.practiceOpen !== false;
+      const hasQuestions = classQs.length > 0;
+      const anyModeAvailable = hasQuestions && (examOpen || practiceOpen);
+
+      const practiceBtn = document.getElementById("startPracticeBtn");
+      const examBtn = document.getElementById("startTimedBtn");
+      const controlsBox = document.getElementById("stuQuizControls");
+      const closedMsg = document.getElementById("stuQuizClosedMsg");
+      const modeStatusNote = document.getElementById("stuModeStatusNote");
+
+      controlsBox.classList.toggle("hidden", !anyModeAvailable);
+      closedMsg.classList.toggle("hidden", anyModeAvailable);
+
+      practiceBtn.classList.toggle("hidden", !practiceOpen);
+      examBtn.classList.toggle("hidden", !examOpen);
+
+      if (!hasQuestions) {
+        closedMsg.textContent = `No questions have been assigned to ${session.code} yet.`;
+        modeStatusNote.classList.add("hidden");
+      } else if (!examOpen && !practiceOpen) {
+        closedMsg.textContent = "Both Practice Mode and Exam Mode are currently closed by the Administrator.";
+        modeStatusNote.classList.add("hidden");
+      } else if (!practiceOpen && examOpen) {
+        modeStatusNote.classList.remove("hidden");
+        modeStatusNote.textContent = "🔒 Practice Mode is currently closed by the Administrator. Only Exam Mode is open.";
+      } else if (practiceOpen && !examOpen) {
+        modeStatusNote.classList.remove("hidden");
+        modeStatusNote.textContent = "🔒 Exam Mode is currently closed by the Administrator. Practice Mode is open for revision.";
       } else {
-        document.getElementById("stuQuizClosedMsg").textContent = "This assessment is currently closed by the Administrator.";
+        modeStatusNote.classList.add("hidden");
       }
 
-      const examBtn = document.getElementById("startTimedBtn");
+      // Enforce Exam Attempt Limit
       const limitMsg = document.getElementById("stuExamLimitMsg");
-      if (maxExams > 0 && examAttempts.length >= maxExams) {
+      if (examOpen && maxExams > 0 && examAttempts.length >= maxExams) {
         examBtn.disabled = true;
         limitMsg.classList.remove("hidden");
-        limitMsg.textContent = `You have used all ${maxExams} official Exam Mode attempt(s). You may still use Practice Mode for revision.`;
+        limitMsg.textContent = practiceOpen
+          ? `You have used all ${maxExams} official Exam Mode attempt(s). You may still use Practice Mode if open.`
+          : `You have used all ${maxExams} official Exam Mode attempt(s).`;
       } else {
         examBtn.disabled = false;
         limitMsg.classList.add("hidden");
@@ -1700,10 +1737,20 @@
       }
     }
 
-    document.getElementById("startPracticeBtn").onclick = () => startQuiz("Practice");
-    document.getElementById("startTimedBtn").onclick = () => startQuiz("Exam");
+    document.getElementById("startPracticeBtn").onclick = () => {
+      if (state.settings.practiceOpen === false) {
+        return showToast("Practice Mode is currently closed by Admin.", "error");
+      }
+      startQuiz("Practice");
+    };
+    document.getElementById("startTimedBtn").onclick = () => {
+      if (!state.settings.quizOpen) {
+        return showToast("Exam Mode is currently closed by Admin.", "error");
+      }
+      startQuiz("Exam");
+    };
 
-    /* ---------------- QUIZ ENGINE ---------------- */
+    /* ---------------- QUIZ ENGINE (SCORE REVEALED ONLY AFTER FULL COMPLETION) ---------------- */
     function buildShuffledQuizItems(studentClass) {
       const mode = state.settings.shuffleMode || "both";
       const pool = getQuestionsForClass(studentClass);
@@ -1736,7 +1783,6 @@
         current: activeQuiz.current,
         answers: activeQuiz.answers,
         flagged: activeQuiz.flagged,
-        streak: activeQuiz.streak,
         tabSwitches: activeQuiz.tabSwitches,
         endTimestamp: activeQuiz.endTimestamp
       };
@@ -1771,7 +1817,6 @@
         current: 0,
         answers: new Array(items.length).fill(null),
         flagged: new Array(items.length).fill(false),
-        streak: 0,
         tabSwitches: 0,
         endTimestamp: Date.now() + durationMs,
         timer: null
@@ -1792,7 +1837,6 @@
         current: saved.current || 0,
         answers: saved.answers,
         flagged: saved.flagged || new Array(saved.items.length).fill(false),
-        streak: saved.streak || 0,
         tabSwitches: saved.tabSwitches || 0,
         endTimestamp: saved.endTimestamp,
         timer: null
@@ -1845,7 +1889,6 @@
       const item = qs[idx];
       const chosen = activeQuiz.answers[idx];
       const answered = activeQuiz.answers.filter(a => a !== null).length;
-      const correct = activeQuiz.answers.filter((a, i) => a === qs[i].ans).length;
 
       if (animateCard) {
         const card = document.getElementById("quizQuestionCard");
@@ -1856,9 +1899,9 @@
 
       document.getElementById("progressBar").style.width = `${(answered / qs.length) * 100}%`;
       document.getElementById("qBadge").textContent = `Question ${idx + 1} of ${qs.length}`;
-      document.getElementById("streakBadge").textContent = `🔥 Streak: ${activeQuiz.streak}`;
+      document.getElementById("quizModeBadge").textContent = `${activeQuiz.mode} Mode`;
       document.getElementById("answeredBadge").textContent = `${answered} of ${qs.length} answered`;
-      document.getElementById("sideScore").textContent = `${correct} / ${answered}`;
+      document.getElementById("sideAnswered").textContent = `${answered} / ${qs.length}`;
       document.getElementById("sideRemain").textContent = qs.length - answered;
       document.getElementById("qText").textContent = item.q;
 
@@ -1876,11 +1919,13 @@
         diag.innerHTML = "";
       }
 
+      // Neutral selection highlight only — no right/wrong reveal until student finishes the quiz
       const box = document.getElementById("optionsBox");
       box.innerHTML = "";
       item.options.forEach((opt, oIdx) => {
         const btn = document.createElement("button");
         btn.className = "opt-btn";
+        if (chosen === oIdx) btn.classList.add("selected");
         const ls = document.createElement("span");
         ls.className = "opt-letter";
         ls.textContent = letters[oIdx];
@@ -1888,40 +1933,11 @@
         ts.textContent = opt;
         btn.append(ls, ts);
 
-        if (chosen !== null) {
-          btn.disabled = true;
-          if (oIdx === item.ans) btn.classList.add("correct");
-          if (oIdx === chosen && chosen !== item.ans) btn.classList.add("wrong");
-        }
         btn.onclick = () => selectAnswer(oIdx);
         box.appendChild(btn);
       });
 
-      const fb = document.getElementById("feedbackBox");
-      fb.innerHTML = "";
-      if (chosen !== null) {
-        const ok = chosen === item.ans;
-        fb.className = `feedback show ${ok ? "correct" : "wrong"}`;
-        const title = document.createElement("div");
-        title.style.fontWeight = "700";
-        if (ok) {
-          title.textContent = activeQuiz.streak >= 3
-            ? `Correct! ${activeQuiz.streak} in a row — keep it up!`
-            : "Correct! Well done.";
-          fb.appendChild(title);
-        } else {
-          title.textContent = `Incorrect. You chose ${letters[chosen]} (${item.options[chosen]}). Correct answer: ${letters[item.ans]} (${item.options[item.ans]}).`;
-          const sol = document.createElement("div");
-          sol.className = "solution-box";
-          const st = document.createElement("strong");
-          st.textContent = "Step-by-Step Worked Solution:\n";
-          sol.append(st, document.createTextNode(item.sol));
-          fb.append(title, sol);
-        }
-      } else {
-        fb.className = "feedback";
-      }
-
+      // Navigator dots show neutral blue for answered questions (never green/red mid-quiz)
       const grid = document.getElementById("paletteGrid");
       grid.innerHTML = "";
       qs.forEach((q, qIdx) => {
@@ -1930,27 +1946,19 @@
         dot.textContent = qIdx + 1;
         if (qIdx === idx) dot.classList.add("active");
         if (activeQuiz.flagged[qIdx]) dot.classList.add("p-flagged");
-        if (activeQuiz.answers[qIdx] !== null) {
-          dot.classList.add(activeQuiz.answers[qIdx] === q.ans ? "p-correct" : "p-wrong");
-        }
+        if (activeQuiz.answers[qIdx] !== null) dot.classList.add("p-answered");
         dot.onclick = () => { activeQuiz.current = qIdx; persistExamState(); renderQuizQuestion(true); };
         grid.appendChild(dot);
       });
 
       document.getElementById("prevBtn").disabled = idx === 0;
-      document.getElementById("nextBtn").textContent = idx === qs.length - 1 ? "Submit & Finish →" : "Next Question →";
+      document.getElementById("nextBtn").textContent = idx === qs.length - 1 ? "Submit & View Score →" : "Next Question →";
     }
 
     function selectAnswer(oIdx) {
       if (!activeQuiz) return;
       const idx = activeQuiz.current;
-      if (activeQuiz.answers[idx] !== null) return;
       activeQuiz.answers[idx] = oIdx;
-      if (oIdx === activeQuiz.items[idx].ans) {
-        activeQuiz.streak++;
-      } else {
-        activeQuiz.streak = 0;
-      }
       persistExamState();
       renderQuizQuestion(false);
     }
@@ -1983,6 +1991,16 @@
 
     function submitQuiz(forced = false) {
       if (!activeQuiz) return;
+
+      // Require confirmation if unanswered questions remain and submission wasn't forced by timer/anti-cheat
+      if (!forced) {
+        const unansweredCount = activeQuiz.answers.filter(a => a === null).length;
+        if (unansweredCount > 0) {
+          const ok = confirm(`You still have ${unansweredCount} unanswered question(s). Submit now and view your final score?`);
+          if (!ok) return;
+        }
+      }
+
       if (activeQuiz.timer) clearInterval(activeQuiz.timer);
       document.getElementById("navTimer").classList.add("hidden");
       document.getElementById("navTabWarn").classList.add("hidden");
@@ -2641,8 +2659,11 @@
       const examSubs = state.submissions.filter(s => s.mode === "Exam");
       const avg = examSubs.length ? Math.round(examSubs.reduce((a, b) => a + b.pct, 0) / examSubs.length) : 0;
 
+      const examStateText = state.settings.quizOpen ? "OPEN" : "CLOSED";
+      const pracStateText = state.settings.practiceOpen !== false ? "OPEN" : "CLOSED";
+
       document.getElementById("aKpiStudents").textContent = students.length;
-      document.getElementById("aKpiClasses").textContent = state.classes.length;
+      document.getElementById("aKpiModes").textContent = `${examStateText} / ${pracStateText}`;
       document.getElementById("aKpiAvg").textContent = `${avg}%`;
       document.getElementById("aKpiRoster").textContent = state.settings.rosterLock ? "ON" : "OFF";
       document.getElementById("aUserCount").textContent = state.users.length;
@@ -2750,6 +2771,7 @@
       });
 
       document.getElementById("aQuizOpenSelect").value = String(state.settings.quizOpen);
+      document.getElementById("aPracticeOpenSelect").value = String(state.settings.practiceOpen !== false);
       document.getElementById("aRosterLockSelect").value = String(state.settings.rosterLock !== false);
       document.getElementById("aMaxExamAttemptsSelect").value = String(state.settings.maxExamAttempts ?? 1);
       document.getElementById("aExamMinsInput").value = state.settings.examMinutes;
@@ -2830,15 +2852,16 @@
 
     document.getElementById("aSaveSettingsBtn").onclick = () => {
       state.settings.quizOpen = document.getElementById("aQuizOpenSelect").value === "true";
+      state.settings.practiceOpen = document.getElementById("aPracticeOpenSelect").value === "true";
       state.settings.rosterLock = document.getElementById("aRosterLockSelect").value === "true";
       state.settings.maxExamAttempts = Number(document.getElementById("aMaxExamAttemptsSelect").value);
       state.settings.examMinutes = Math.max(5, Number(document.getElementById("aExamMinsInput").value) || 45);
       state.settings.shuffleMode = document.getElementById("aShuffleModeSelect").value;
       state.settings.antiCheat = document.getElementById("aAntiCheatSelect").value === "true";
       saveBranch("settings", state.settings);
-      addLog("Principal Admin", `Updated exam & security settings (RosterLock: ${state.settings.rosterLock}, MaxExamAttempts: ${state.settings.maxExamAttempts})`);
+      addLog("Principal Admin", `Updated settings (Exam: ${state.settings.quizOpen}, Practice: ${state.settings.practiceOpen}, RosterLock: ${state.settings.rosterLock})`);
       document.getElementById("aSettingsSaved").textContent = "Settings saved!";
-      showToast("Exam & security settings saved!", "success");
+      showToast("Exam, Practice & security settings saved!", "success");
       setTimeout(() => document.getElementById("aSettingsSaved").textContent = "", 2500);
       renderAdminDashboard();
     };
@@ -2860,9 +2883,5 @@
       showToast("Database reset to default", "info");
     };
   </script>
- 
 </body>
-  < footer>
-   <h1>Developed by: Daniel Owusu Frimpong</h1>
- </footer>
 </html>
