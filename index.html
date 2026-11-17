@@ -4,10 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GBAT Online Portal | Admin, Teacher & Student Dashboards</title>
+  <!-- SheetJS for Excel (.xlsx/.xls/.csv) Import & Template Export -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       --primary: #1d4ed8;
       --primary-dark: #1e3a8a;
+      --primary-light: #3b82f6;
       --primary-soft: #eff6ff;
       --success: #15803d;
       --success-bg: #dcfce7;
@@ -21,6 +24,8 @@
       --text: #0f172a;
       --muted: #475569;
       --border: #cbd5e1;
+      --shadow-sm: 0 2px 10px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.1), 0 4px 10px -2px rgba(15, 23, 42, 0.05);
     }
     * { box-sizing: border-box; }
     body {
@@ -29,12 +34,44 @@
       background: var(--bg);
       color: var(--text);
       line-height: 1.5;
+      overflow-x: hidden;
     }
     .hidden { display: none !important; }
 
+    /* Keyframe Animations */
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes questionSlideIn {
+      from { opacity: 0; transform: translateX(18px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes popBounce {
+      0% { transform: scale(0.95); }
+      50% { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+    @keyframes shakeHorizontal {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.45); }
+      50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+    }
+    @keyframes confettiFall {
+      0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+    }
+
+    .screen-anim { animation: fadeSlideUp 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .q-animate { animation: questionSlideIn 0.28s ease-out forwards; }
+
     /* Navbar */
     .navbar {
-      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary), #2563eb);
       color: #fff;
       padding: 12px 24px;
       display: flex;
@@ -45,26 +82,35 @@
       position: sticky;
       top: 0;
       z-index: 50;
-      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.15);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.16);
     }
     .brand { display: flex; align-items: center; gap: 12px; }
     .brand-badge {
       background: #fff;
       color: var(--primary-dark);
       font-weight: 900;
-      padding: 6px 10px;
-      border-radius: 8px;
+      padding: 6px 11px;
+      border-radius: 9px;
       font-size: 0.95rem;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
     }
     .brand-title { font-weight: 700; font-size: 1.05rem; }
-    .brand-sub { font-size: 0.78rem; opacity: 0.85; }
+    .brand-sub { font-size: 0.78rem; opacity: 0.88; }
     .nav-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .pill {
       background: rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(4px);
       padding: 5px 12px;
       border-radius: 999px;
-      font-size: 0.86rem;
+      font-size: 0.85rem;
       font-weight: 600;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .pill.synced {
+      background: rgba(22, 163, 74, 0.28);
+      border: 1px solid rgba(134, 239, 172, 0.5);
+      animation: pulseGlow 2.4s infinite;
     }
     .btn-nav {
       background: rgba(255,255,255,0.2);
@@ -75,24 +121,27 @@
       font-weight: 600;
       cursor: pointer;
       font-size: 0.85rem;
+      transition: all 0.2s ease;
     }
-    .btn-nav:hover { background: rgba(255,255,255,0.3); }
+    .btn-nav:hover { background: rgba(255,255,255,0.32); transform: translateY(-1px); }
 
-    .container { max-width: 1140px; margin: 24px auto; padding: 0 16px 56px; }
+    .container { max-width: 1140px; margin: 24px auto; padding: 0 16px 64px; }
     .card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 24px;
-      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+      box-shadow: var(--shadow-sm);
       margin-bottom: 20px;
+      transition: box-shadow 0.25s ease, transform 0.25s ease;
     }
+    .card:hover { box-shadow: var(--shadow-md); }
 
     /* Buttons & Inputs */
     .btn {
       padding: 10px 18px;
       border: none;
-      border-radius: 8px;
+      border-radius: 9px;
       font-weight: 600;
       font-size: 0.92rem;
       cursor: pointer;
@@ -100,14 +149,19 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
     }
-    .btn-sm { padding: 6px 11px; font-size: 0.82rem; border-radius: 6px; }
+    .btn:hover:not(:disabled) { transform: translateY(-1.5px); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12); }
+    .btn:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+    .btn-sm { padding: 6px 12px; font-size: 0.82rem; border-radius: 7px; }
     .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
     .btn-secondary { background: #e2e8f0; color: var(--text); }
+    .btn-secondary:hover:not(:disabled) { background: #cbd5e1; }
     .btn-success { background: var(--success); color: #fff; }
     .btn-danger { background: var(--danger); color: #fff; }
     .btn-outline { background: #fff; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .btn-block { width: 100%; }
 
@@ -117,12 +171,34 @@
       width: 100%;
       padding: 10px 12px;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 9px;
       font-size: 0.94rem;
       font-family: inherit;
       background: #fff;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.14);
     }
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+
+    /* Excel Dropzone */
+    .drop-zone {
+      border: 2px dashed #93c5fd;
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.22s ease;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      transform: scale(1.005);
+    }
 
     /* Login Portal */
     .login-wrap { max-width: 520px; margin: 36px auto; }
@@ -136,8 +212,16 @@
       cursor: pointer;
       text-align: center;
       color: var(--muted);
+      transition: all 0.2s ease;
     }
-    .role-tab.active { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-dark); }
+    .role-tab:hover { border-color: #93c5fd; }
+    .role-tab.active {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(29, 78, 216, 0.12);
+    }
 
     /* Dashboard Grids & Tabs */
     .dash-header {
@@ -158,29 +242,48 @@
     .kpi-card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 18px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.22s ease, box-shadow 0.22s ease;
     }
-    .kpi-label { font-size: 0.82rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-    .kpi-value { font-size: 1.8rem; font-weight: 800; color: var(--primary-dark); margin-top: 4px; }
+    .kpi-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    }
+    .kpi-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+    .kpi-label { font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+    .kpi-value { font-size: 1.85rem; font-weight: 800; color: var(--primary-dark); margin-top: 4px; }
 
     .sub-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
     .sub-tab {
       padding: 8px 14px;
-      border-radius: 8px;
+      border-radius: 9px;
       border: 1px solid var(--border);
       background: #fff;
       font-weight: 600;
       cursor: pointer;
       font-size: 0.9rem;
+      transition: all 0.18s ease;
     }
-    .sub-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .sub-tab:hover { border-color: var(--primary); color: var(--primary); }
+    .sub-tab.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 3px 10px rgba(29, 78, 216, 0.22);
+    }
 
     /* Tables */
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
     th, td { padding: 11px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
     th { background: #f8fafc; font-weight: 700; color: var(--muted); font-size: 0.82rem; text-transform: uppercase; }
+    tbody tr { transition: background 0.15s ease; }
+    tbody tr:hover { background: #f8fafc; }
     .badge {
       display: inline-block;
       padding: 3px 9px;
@@ -206,7 +309,9 @@
       border-radius: 999px;
       font-weight: 600;
       font-size: 0.88rem;
+      transition: transform 0.18s ease;
     }
+    .class-tag:hover { transform: scale(1.03); }
     .class-tag button {
       background: none;
       border: none;
@@ -223,17 +328,24 @@
       background: var(--primary-soft);
       border-left: 4px solid var(--primary);
       padding: 12px 16px;
-      border-radius: 8px;
+      border-radius: 9px;
       margin-bottom: 10px;
+      transition: transform 0.18s ease;
     }
+    .notice:hover { transform: translateX(3px); }
     .notice-meta { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
 
     /* Quiz Workspace */
-    .quiz-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; }
+    .quiz-layout { display: grid; grid-template-columns: 1fr 290px; gap: 20px; align-items: start; }
     @media (max-width: 860px) { .quiz-layout { grid-template-columns: 1fr; } }
-    .progress-wrap { width: 100%; height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-bottom: 16px; }
-    .progress-bar { height: 100%; width: 0%; background: var(--primary); transition: width 0.25s ease; }
-    .q-text { font-size: 1.12rem; font-weight: 600; margin: 12px 0 16px; }
+    .progress-wrap { width: 100%; height: 9px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-bottom: 16px; }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--primary), #38bdf8);
+      transition: width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .q-text { font-size: 1.14rem; font-weight: 600; margin: 12px 0 16px; }
     .diagram {
       margin: 10px 0 16px;
       display: flex;
@@ -250,19 +362,24 @@
       gap: 12px;
       width: 100%;
       text-align: left;
-      padding: 12px 15px;
+      padding: 13px 16px;
       font-size: 1rem;
       background: #fff;
       border: 2px solid var(--border);
-      border-radius: 10px;
+      border-radius: 11px;
       cursor: pointer;
       color: var(--text);
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
     }
-    .opt-btn:hover:not(:disabled) { border-color: var(--primary); background: var(--primary-soft); }
+    .opt-btn:hover:not(:disabled) {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      transform: translateX(4px);
+    }
     .opt-btn:disabled { cursor: default; }
     .opt-letter {
-      width: 28px;
-      height: 28px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       background: #e2e8f0;
       display: inline-flex;
@@ -271,13 +388,22 @@
       font-weight: 700;
       font-size: 0.88rem;
       flex-shrink: 0;
+      transition: background 0.2s ease, color 0.2s ease;
     }
-    .opt-btn.correct { border-color: var(--success); background: var(--success-bg); }
+    .opt-btn.correct {
+      border-color: var(--success);
+      background: var(--success-bg);
+      animation: popBounce 0.32s ease;
+    }
     .opt-btn.correct .opt-letter { background: var(--success); color: #fff; }
-    .opt-btn.wrong { border-color: var(--danger); background: var(--danger-bg); }
+    .opt-btn.wrong {
+      border-color: var(--danger);
+      background: var(--danger-bg);
+      animation: shakeHorizontal 0.36s ease;
+    }
     .opt-btn.wrong .opt-letter { background: var(--danger); color: #fff; }
 
-    .feedback { margin-top: 16px; padding: 15px; border-radius: 10px; display: none; }
+    .feedback { margin-top: 16px; padding: 15px; border-radius: 11px; display: none; animation: fadeSlideUp 0.28s ease; }
     .feedback.show { display: block; }
     .feedback.correct { background: var(--success-bg); border: 1px solid #86efac; color: #14532d; }
     .feedback.wrong { background: var(--warn-bg); border: 1px solid var(--warn-border); color: #431407; }
@@ -290,17 +416,41 @@
     }
     .palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
     .p-dot {
-      height: 32px;
-      border-radius: 6px;
+      height: 33px;
+      border-radius: 7px;
       border: 1px solid var(--border);
       background: #fff;
       font-weight: 600;
       font-size: 0.82rem;
       cursor: pointer;
+      position: relative;
+      transition: transform 0.14s ease, border-color 0.14s ease;
     }
-    .p-dot.active { border: 2px solid var(--primary); }
+    .p-dot:hover { transform: scale(1.08); }
+    .p-dot.active { border: 2px solid var(--primary); box-shadow: 0 0 0 2px rgba(29,78,216,0.18); }
     .p-dot.p-correct { background: var(--success-bg); border-color: var(--success); color: var(--success); }
     .p-dot.p-wrong { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
+    .p-dot.p-flagged::after {
+      content: "";
+      position: absolute;
+      top: 2px; right: 2px;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #f59e0b;
+    }
+
+    .streak-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fcd34d;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
 
     .review-item {
       border: 1px solid var(--border);
@@ -309,12 +459,50 @@
       padding: 14px;
       margin-top: 12px;
       background: #fff;
+      transition: transform 0.18s ease;
     }
+    .review-item:hover { transform: translateX(3px); }
     .review-item.passed { border-left-color: var(--success); }
     .review-item.missed { border-left-color: var(--danger); }
 
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      background: #0f172a;
+      color: #fff;
+      padding: 11px 16px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25);
+      animation: fadeSlideUp 0.25s ease forwards;
+      border-left: 4px solid #38bdf8;
+    }
+    .toast.success { border-left-color: #22c55e; }
+    .toast.error { border-left-color: #ef4444; }
+
+    /* Confetti */
+    .confetti-piece {
+      position: fixed;
+      top: -12px;
+      width: 10px;
+      height: 14px;
+      z-index: 998;
+      pointer-events: none;
+      animation: confettiFall linear forwards;
+    }
+
     @media print {
-      .navbar, .no-print { display: none !important; }
+      .navbar, .no-print, .toast-container { display: none !important; }
       body { background: #fff; }
       .card { border: none; box-shadow: none; }
     }
@@ -342,7 +530,7 @@
   <main class="container">
 
     <!-- 1. LOGIN / PORTAL ENTRY -->
-    <section class="card login-wrap" id="loginScreen">
+    <section class="card login-wrap screen-anim" id="loginScreen">
       <h2 style="margin:0 0 6px;">Sign In to GBAT Portal</h2>
       <p style="margin:0 0 18px; color:var(--muted); font-size:0.92rem;">Choose your dashboard role to continue.</p>
 
@@ -356,7 +544,8 @@
       <div id="loginStudentForm">
         <div class="field">
           <label>Student Full Name</label>
-          <input type="text" id="stuNameInput" placeholder="Enter your full name" />
+          <input type="text" id="stuNameInput" placeholder="Enter your full name" list="registeredStudentsList" />
+          <datalist id="registeredStudentsList"></datalist>
         </div>
         <div class="field">
           <label>Select Class</label>
@@ -395,7 +584,7 @@
     </section>
 
     <!-- 2. STUDENT DASHBOARD -->
-    <section id="studentDashboard" class="hidden">
+    <section id="studentDashboard" class="hidden screen-anim">
       <div class="dash-header">
         <div>
           <h1 id="stuWelcome">Student Dashboard</h1>
@@ -416,8 +605,11 @@
       </div>
 
       <div class="card">
-        <h3 style="margin-top:0;">GBAT Mathematics Paper 1 (Multiple Choice)</h3>
-        <p style="color:var(--muted); margin-bottom:16px;" id="stuQuizDesc"></p>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <h3 style="margin:0;">GBAT Mathematics Paper 1 (Randomized Assessment)</h3>
+          <span class="badge b-blue">🔀 Questions &amp; Choices Auto-Shuffled</span>
+        </div>
+        <p style="color:var(--muted); margin:10px 0 16px;" id="stuQuizDesc"></p>
         <div id="stuQuizControls" style="display:flex; gap:10px; flex-wrap:wrap;">
           <button class="btn btn-primary" id="startPracticeBtn">Start Practice Mode (Untimed)</button>
           <button class="btn btn-secondary" id="startTimedBtn">Start Exam Mode (Timed)</button>
@@ -441,20 +633,27 @@
     </section>
 
     <!-- 2B. QUIZ RUNNER -->
-    <section id="quizScreen" class="hidden">
+    <section id="quizScreen" class="hidden screen-anim">
       <div class="quiz-layout">
-        <div class="card">
+        <div class="card" id="quizQuestionCard">
           <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="badge b-blue" id="qBadge">Question 1</span>
-            <span style="font-size:0.86rem; color:var(--muted);" id="answeredBadge">0 answered</span>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="badge b-blue" id="qBadge">Question 1</span>
+              <span class="streak-pill" id="streakBadge">🔥 Streak: 0</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button class="btn btn-outline btn-sm" id="flagQuestionBtn" title="Bookmark question to revisit">🚩 Flag</button>
+              <span style="font-size:0.86rem; color:var(--muted);" id="answeredBadge">0 answered</span>
+            </div>
           </div>
           <div class="q-text" id="qText"></div>
           <div class="diagram hidden" id="qDiagram"></div>
           <div class="options" id="optionsBox"></div>
           <div class="feedback" id="feedbackBox"></div>
-          <div style="display:flex; justify-content:space-between; margin-top:20px; gap:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; gap:10px; flex-wrap:wrap;">
             <button class="btn btn-secondary" id="prevBtn">← Previous</button>
+            <span style="font-size:0.8rem; color:var(--muted);">Tip: Press A/B/C/D or ← / → keys</span>
             <button class="btn btn-primary" id="nextBtn">Next Question →</button>
           </div>
         </div>
@@ -467,7 +666,7 @@
           <div style="font-size:0.9rem; display:flex; justify-content:space-between; margin-bottom:10px;">
             <span>Remaining:</span><strong id="sideRemain">40</strong>
           </div>
-          <div style="font-size:0.8rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Navigator</div>
+          <div style="font-size:0.8rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Navigator (Orange dot = Flagged)</div>
           <div class="palette-grid" id="paletteGrid"></div>
           <button class="btn btn-outline btn-block" id="finishEarlyBtn" style="margin-top:16px;">Submit &amp; Finish</button>
         </aside>
@@ -475,11 +674,11 @@
     </section>
 
     <!-- 2C. RESULT & WORKED REVIEW SCREEN -->
-    <section class="card hidden" id="resultScreen">
+    <section class="card hidden screen-anim" id="resultScreen">
       <div style="text-align:center; padding-bottom:18px; border-bottom:1px solid var(--border);">
         <span class="badge b-blue">Assessment Report</span>
         <h2 id="resStudentTitle" style="margin:8px 0 4px;"></h2>
-        <div style="font-size:2.5rem; font-weight:800; color:var(--primary);" id="resScoreBig"></div>
+        <div style="font-size:2.6rem; font-weight:800; color:var(--primary);" id="resScoreBig"></div>
         <p id="resRemark" style="color:var(--muted); margin:6px 0 16px;"></p>
         <div class="no-print" style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
           <button class="btn btn-primary" id="resBackBtn">Back to Dashboard</button>
@@ -491,7 +690,7 @@
     </section>
 
     <!-- 3. TEACHER DASHBOARD -->
-    <section id="teacherDashboard" class="hidden">
+    <section id="teacherDashboard" class="hidden screen-anim">
       <div class="dash-header">
         <div>
           <h1>Teacher Dashboard</h1>
@@ -539,7 +738,7 @@
       <!-- T2: Question Analytics -->
       <div class="card hidden" id="tAnalytics">
         <h3 style="margin-top:0;">Item Analysis (Accuracy per Question)</h3>
-        <p style="color:var(--muted); font-size:0.9rem;">Identify topics where students struggle most so you can reteach them.</p>
+        <p style="color:var(--muted); font-size:0.9rem;">Tracks accuracy accurately even when questions are shuffled for each student.</p>
         <div class="table-wrap">
           <table>
             <thead>
@@ -574,10 +773,15 @@
         </div>
         <button class="btn btn-primary" id="addQuestionBtn">+ Add Question</button>
 
-        <h3 style="margin-top:26px;">Current Question Bank (<span id="qBankCount"></span>)</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:26px; margin-bottom:12px;">
+          <h3 style="margin:0;">Current Question Bank (<span id="qBankCount"></span>)</h3>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" id="shuffleBankBtn">🔀 Shuffle Bank Order &amp; Save</button>
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>#</th><th>Question</th><th>Correct</th><th>Action</th></tr></thead>
+            <thead><tr><th>#</th><th>Question</th><th>Correct</th><th>Reorder / Action</th></tr></thead>
             <tbody id="tQuestionsBody"></tbody>
           </table>
         </div>
@@ -614,11 +818,11 @@
     </section>
 
     <!-- 4. ADMIN DASHBOARD -->
-    <section id="adminDashboard" class="hidden">
+    <section id="adminDashboard" class="hidden screen-anim">
       <div class="dash-header">
         <div>
           <h1>Administrator Dashboard</h1>
-          <span style="color:var(--muted); font-size:0.92rem;">System-wide control, class setup, user management, and password controls</span>
+          <span style="color:var(--muted); font-size:0.92rem;">System-wide control, Excel student import, class setup, and password controls</span>
         </div>
       </div>
 
@@ -631,7 +835,7 @@
 
       <div class="sub-tabs" id="adminTabs">
         <button class="sub-tab active" data-tab="aClasses">Classes &amp; Passwords</button>
-        <button class="sub-tab" data-tab="aUsers">User Management</button>
+        <button class="sub-tab" data-tab="aUsers">User Management &amp; Excel Upload</button>
         <button class="sub-tab" data-tab="aSettings">Exam Controls</button>
         <button class="sub-tab" data-tab="aLogs">Activity Logs &amp; Backup</button>
       </div>
@@ -663,9 +867,27 @@
         <span id="aPassSavedMsg" style="margin-left:10px; color:var(--success); font-weight:600;"></span>
       </div>
 
-      <!-- A1: Users -->
+      <!-- A1: Users & Bulk Excel Upload -->
       <div class="card hidden" id="aUsers">
-        <h3 style="margin-top:0;">Add New Student or Teacher</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+          <div>
+            <h3 style="margin:0;">Bulk Upload Students via Excel (.xlsx, .xls, .csv)</h3>
+            <p style="color:var(--muted); font-size:0.88rem; margin:4px 0 0;">Spreadsheet columns: <strong>Full Name</strong> and <strong>Class</strong>. New classes in the file are created automatically.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" id="downloadExcelTemplateBtn">⬇ Download Excel Template (.xlsx)</button>
+        </div>
+
+        <div class="drop-zone" id="excelDropZone">
+          <div style="font-size:1.5rem; margin-bottom:4px;">📊</div>
+          <div style="font-weight:700; color:var(--primary-dark);">Drag &amp; Drop Excel File Here or Click to Browse</div>
+          <div style="font-size:0.84rem; color:var(--muted); margin-top:4px;">Supports .xlsx, .xls, and .csv student rosters</div>
+          <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="hidden" />
+        </div>
+        <div id="excelUploadSummary" class="hidden" style="margin-top:10px; padding:10px 14px; border-radius:8px; background:var(--success-bg); color:var(--success); font-weight:600; font-size:0.9rem;"></div>
+
+        <hr style="border:none; border-top:1px solid var(--border); margin:24px 0;" />
+
+        <h3 style="margin-top:0;">Add Single Student or Teacher</h3>
         <div class="form-grid">
           <div class="field"><label>Full Name</label><input type="text" id="aNewName" placeholder="e.g. Yaw Boateng" /></div>
           <div class="field">
@@ -686,7 +908,7 @@
         </div>
         <button class="btn btn-primary" id="aAddUserBtn">+ Create User</button>
 
-        <h3 style="margin-top:24px;">All Portal Accounts</h3>
+        <h3 style="margin-top:24px;">All Portal Accounts (<span id="aUserCount">0</span>)</h3>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Name</th><th>Role</th><th>Class / Staff ID</th><th>Status</th><th>Actions</th></tr></thead>
@@ -709,6 +931,14 @@
           <div class="field">
             <label>Exam Mode Duration (Minutes)</label>
             <input type="number" id="aExamMinsInput" min="5" max="180" />
+          </div>
+          <div class="field">
+            <label>Student Quiz Randomization</label>
+            <select id="aShuffleModeSelect">
+              <option value="both">Shuffle Both Questions &amp; Answer Options</option>
+              <option value="questions">Shuffle Questions Only</option>
+              <option value="none">Fixed Order (No Shuffle)</option>
+            </select>
           </div>
         </div>
         <button class="btn btn-primary" id="aSaveSettingsBtn">Save Settings</button>
@@ -735,6 +965,8 @@
 
   </main>
 
+  <div class="toast-container" id="toastContainer"></div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
@@ -757,47 +989,85 @@
 
     const letters = ["A", "B", "C", "D"];
 
+    function showToast(message, type = "info") {
+      const container = document.getElementById("toastContainer");
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(8px)";
+        toast.style.transition = "all 0.25s ease";
+        setTimeout(() => toast.remove(), 260);
+      }, 3000);
+    }
+
+    function launchConfetti() {
+      const colors = ["#1d4ed8", "#16a34a", "#f59e0b", "#ec4899", "#06b6d4", "#8b5cf6"];
+      for (let i = 0; i < 65; i++) {
+        const piece = document.createElement("div");
+        piece.className = "confetti-piece";
+        piece.style.left = `${Math.random() * 100}vw`;
+        piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.borderRadius = Math.random() > 0.5 ? "50%" : "2px";
+        piece.style.animationDuration = `${2.2 + Math.random() * 2}s`;
+        piece.style.animationDelay = `${Math.random() * 0.45}s`;
+        document.body.appendChild(piece);
+        setTimeout(() => piece.remove(), 4600);
+      }
+    }
+
+    function fisherYatesShuffle(arr) {
+      const copy = arr.slice();
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
     const defaultQuestions = [
-      { q: "A point P(6, -3) is rotated 180° about the origin. Find its image.", options: ["(-6, 3)", "(6, 3)", "(-3, 6)", "(-6, -3)"], ans: 0, sol: "Rule for 180° rotation about the origin: (x, y) → (-x, -y).\nSubstitute P(6, -3): x' = -6, y' = -(-3) = 3.\nImage = (-6, 3)." },
-      { q: "Write the next two terms: 3, 7, 15, 31, __, __.", options: ["47, 63", "62, 126", "63, 127", "64, 128"], ans: 2, sol: "Differences: 7-3=4, 15-7=8, 31-15=16.\nDifferences double each step (+32, +64).\n31 + 32 = 63, and 63 + 64 = 127." },
-      { q: "Convert 0.825 to a percentage.", options: ["8.25%", "82.5%", "825%", "0.825%"], ans: 1, sol: "Multiply by 100%: 0.825 × 100% = 82.5%." },
-      { q: "Find the HCF of 18, 30 and 48.", options: ["3", "6", "9", "12"], ans: 1, sol: "18 = 2 × 3², 30 = 2 × 3 × 5, 48 = 2⁴ × 3.\nCommon factors with lowest powers: 2 × 3 = 6." },
-      { q: "Which number is divisible by both 7 and 11?", options: ["154", "165", "176", "187"], ans: 0, sol: "7 × 11 = 77.\nMultiples of 77: 77, 154, 231...\nSo 154 is divisible by both 7 and 11." },
-      { q: "Akosua is x years old. In 9 years, she will be 25. Which equation represents the statement?", options: ["x - 9 = 25", "x + 9 = 25", "25 + x = 9", "9x = 25"], ans: 1, sol: "Current age = x. Age in 9 years = x + 9.\nEquation: x + 9 = 25." },
-      { q: "Find the gradient of the line through R(2, -1) and S(6, 7).", options: ["1/2", "2", "3", "4"], ans: 1, sol: "m = (y₂ - y₁) / (x₂ - x₁) = (7 - (-1)) / (6 - 2) = 8 / 4 = 2." },
-      { q: "Find the median of the composite numbers less than 18.", options: ["9", "10", "11", "12"], ans: 1, sol: "Composite numbers < 18: 4, 6, 8, 9, 10, 12, 14, 15, 16 (9 numbers).\nMiddle (5th) value = 10." },
-      { q: "Two angles of a triangle add up to 137°. Find the third angle.", options: ["33°", "43°", "47°", "53°"], ans: 1, sol: "Angles in a triangle sum to 180°.\nThird angle = 180° - 137° = 43°." },
-      { q: "The bearing of Lapaz from Achimota is 128°. Find the bearing of A from Lapaz.", options: ["052°", "128°", "232°", "308°"], ans: 3, sol: "Back bearing: since 128° < 180°, add 180°.\n128° + 180° = 308°." },
-      { q: "Expand and simplify (m - 3)(m + 5).", options: ["m² + 2m - 15", "m² + 8m - 15", "m² - 2m - 15", "m² + 2m + 15"], ans: 0, sol: "m(m + 5) - 3(m + 5) = m² + 5m - 3m - 15 = m² + 2m - 15." },
-      { q: "A bus travels at 72 km/h for 2.5 hours. Find the distance covered.", options: ["144 km", "160 km", "180 km", "216 km"], ans: 2, sol: "Distance = Speed × Time = 72 × 2.5 = 144 + 36 = 180 km." },
-      { q: "A cyclist travels 20 km north and then 15 km east. How far is the cyclist from the starting point?", options: ["25 km", "30 km", "35 km", "40 km"], ans: 0, sol: "By Pythagoras' theorem: d = √(20² + 15²) = √(400 + 225) = √625 = 25 km." },
-      { q: "A circle has a diameter of 35 cm. Find its circumference. [Take π = 22/7]", options: ["55 cm", "70 cm", "110 cm", "220 cm"], ans: 2, sol: "C = πd = (22/7) × 35 = 22 × 5 = 110 cm." },
-      { q: "A point (-4, 3) is rotated 90° anticlockwise about the origin. Find its image.", options: ["(-3, -4)", "(3, 4)", "(-3, 4)", "(4, -3)"], ans: 0, sol: "90° anticlockwise rule: (x, y) → (-y, x).\n(-4, 3) → (-3, -4)." },
-      { q: "The mean of 6, 8, h, 10 and 11 is 9. Find h.", options: ["8", "9", "10", "11"], ans: 2, sol: "(6 + 8 + h + 10 + 11) / 5 = 9\n35 + h = 45\nh = 45 - 35 = 10." },
-      { q: "Express 9.8 litres in millilitres.", options: ["98 ml", "980 ml", "9,800 ml", "98,000 ml"], ans: 2, sol: "1 litre = 1,000 ml.\n9.8 × 1,000 = 9,800 ml." },
-      { q: "Two fair dice are thrown. Find the probability that their sum is 7.", options: ["1/12", "1/9", "1/6", "1/4"], ans: 2, sol: "Total outcomes = 36.\nPairs summing to 7: (1,6), (2,5), (3,4), (4,3), (5,2), (6,1) = 6 pairs.\nProbability = 6/36 = 1/6." },
-      { q: "Round 684.756 to the nearest tenth.", options: ["684.7", "684.8", "684.75", "685.0"], ans: 1, sol: "Tenths digit is 7; next digit is 5 (round up).\n684.756 → 684.8." },
-      { q: "Write nine million, seventy thousand and six in figures.", options: ["9,700,006", "9,070,006", "9,007,006", "9,070,600"], ans: 1, sol: "9,000,000 + 70,000 + 6 = 9,070,006." },
-      { q: "A worker earns GH₵145 each day. How much will the worker earn in 12 days?", options: ["GH₵1,620", "GH₵1,680", "GH₵1,740", "GH₵1,780"], ans: 2, sol: "145 × 12 = (145 × 10) + (145 × 2) = 1,450 + 290 = GH₵1,740." },
-      { q: "Each exterior angle of a regular polygon is 20°. How many sides does the polygon have?", options: ["16", "18", "20", "24"], ans: 1, sol: "n = 360° / 20° = 18 sides." },
-      { q: "A regular octagon has side length 9.5 cm. Find its perimeter.", options: ["66.5 cm", "72.0 cm", "76.0 cm", "85.5 cm"], ans: 2, sol: "Octagon has 8 sides.\nPerimeter = 8 × 9.5 = 76.0 cm." },
-      { q: "Use the isosceles triangle to find h.", svg: `<svg width="220" height="150" viewBox="0 0 240 170" xmlns="http://www.w3.org/2000/svg"><polygon points="120,20 40,140 200,140" fill="none" stroke="#0f172a" stroke-width="2.5"/><line x1="120" y1="20" x2="120" y2="140" stroke="#0f172a" stroke-width="1.8" stroke-dasharray="5,4"/><rect x="120" y="128" width="12" height="12" fill="none" stroke="#0f172a" stroke-width="1.5"/><text x="56" y="78" font-size="14" font-weight="600" fill="#0f172a">13 cm</text><text x="155" y="78" font-size="14" font-weight="600" fill="#0f172a">13 cm</text><text x="126" y="92" font-size="14" font-weight="700" fill="#1d4ed8">h</text><text x="102" y="160" font-size="14" font-weight="600" fill="#0f172a">10 cm</text></svg>`, options: ["10 cm", "12 cm", "13 cm", "15 cm"], ans: 1, sol: "Half base = 10 ÷ 2 = 5 cm.\nh = √(13² - 5²) = √(169 - 25) = √144 = 12 cm." },
-      { q: "Round GH₵86,549 to the nearest thousand cedis.", options: ["GH₵86,000", "GH₵86,500", "GH₵87,000", "GH₵90,000"], ans: 2, sol: "Thousands digit is 6; hundreds digit is 5 (round up).\nGH₵87,000." },
-      { q: "The area of a square tile is 144 cm². Find its perimeter.", options: ["24 cm", "36 cm", "48 cm", "56 cm"], ans: 2, sol: "Side = √144 = 12 cm.\nPerimeter = 4 × 12 = 48 cm." },
-      { q: "A cube has side 7 cm. Find its total surface area.", options: ["196 cm²", "294 cm²", "343 cm²", "392 cm²"], ans: 1, sol: "TSA = 6s² = 6 × 7² = 6 × 49 = 294 cm²." },
-      { q: "Use the diagram to find y.", svg: `<svg width="240" height="135" viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><polygon points="45,25 225,75 45,125" fill="none" stroke="#0f172a" stroke-width="2.5"/><text x="30" y="25" font-size="14" font-weight="700" fill="#0f172a">A</text><text x="232" y="80" font-size="14" font-weight="700" fill="#0f172a">B</text><text x="30" y="132" font-size="14" font-weight="700" fill="#0f172a">C</text><text x="53" y="52" font-size="14" font-weight="700" fill="#1d4ed8">y°</text><text x="53" y="110" font-size="14" font-weight="600" fill="#0f172a">52°</text><text x="165" y="79" font-size="14" font-weight="600" fill="#0f172a">31°</text></svg>`, options: ["83°", "97°", "101°", "128°"], ans: 1, sol: "y° + 52° + 31° = 180°\ny = 180° - 83° = 97°." },
-      { q: "Given 4p : 12 = 5 : 15, find p.", options: ["1", "2", "3", "4"], ans: 0, sol: "4p / 12 = 5 / 15\np / 3 = 1 / 3 → p = 1." },
-      { q: "Translate \"five times a number decreased by 12\" into an algebraic expression.", options: ["5x + 12", "5x - 12", "12x - 5", "5 - 12x"], ans: 1, sol: "5 times x minus 12 = 5x - 12." },
-      { q: "A fair die is tossed once. Find the probability of obtaining an odd prime number.", options: ["1/6", "1/3", "1/2", "2/3"], ans: 1, sol: "Odd primes on a die: {3, 5} (2 outcomes out of 6).\nProbability = 2/6 = 1/3." },
-      { q: "A learner scores 54 out of 60 marks. Express the score as a percentage.", options: ["80%", "85%", "90%", "95%"], ans: 2, sol: "(54 / 60) × 100% = (9/10) × 100% = 90%." },
-      { q: "Find the equation of a line with gradient 2 and y-intercept -5.", options: ["y = 2x - 5", "y = -2x - 5", "y = 5x + 2", "y = 2x + 5"], ans: 0, sol: "y = mx + c → y = 2x - 5." },
-      { q: "Solve the inequality 3(2x - 1) - 4x > 5.", options: ["x > 4", "x < 4", "x > 1", "x < 1"], ans: 0, sol: "6x - 3 - 4x > 5\n2x > 8\nx > 4." },
-      { q: "The number line represents which inequality?", svg: `<svg width="300" height="70" viewBox="0 0 320 75" xmlns="http://www.w3.org/2000/svg"><line x1="20" y1="45" x2="300" y2="45" stroke="#0f172a" stroke-width="2"/><polygon points="15,45 25,40 25,50" fill="#0f172a"/><polygon points="305,45 295,40 295,50" fill="#0f172a"/><g font-size="12" text-anchor="middle" fill="#0f172a"><line x1="40" y1="40" x2="40" y2="50" stroke="#0f172a"/><text x="40" y="65">-4</text><line x1="70" y1="40" x2="70" y2="50" stroke="#0f172a"/><text x="70" y="65">-3</text><line x1="100" y1="40" x2="100" y2="50" stroke="#0f172a"/><text x="100" y="65">-2</text><line x1="130" y1="40" x2="130" y2="50" stroke="#0f172a"/><text x="130" y="65">-1</text><line x1="160" y1="40" x2="160" y2="50" stroke="#0f172a"/><text x="160" y="65">0</text><line x1="190" y1="40" x2="190" y2="50" stroke="#0f172a"/><text x="190" y="65">1</text><line x1="220" y1="40" x2="220" y2="50" stroke="#0f172a"/><text x="220" y="65">2</text><line x1="250" y1="40" x2="250" y2="50" stroke="#0f172a"/><text x="250" y="65">3</text><line x1="280" y1="40" x2="280" y2="50" stroke="#0f172a"/><text x="280" y="65">4</text></g><line x1="214" y1="22" x2="25" y2="22" stroke="#1d4ed8" stroke-width="3"/><polygon points="18,22 30,16 30,28" fill="#1d4ed8"/><circle cx="220" cy="22" r="6" fill="#ffffff" stroke="#1d4ed8" stroke-width="3"/></svg>`, options: ["x < 2", "x ≤ 2", "x > 2", "x ≥ 2"], ans: 0, sol: "Open circle at 2 (excluded) and arrow pointing left (< 2) → x < 2." },
-      { q: "Round 7,846,391 to the nearest ten thousand.", options: ["7,840,000", "7,846,000", "7,850,000", "7,900,000"], ans: 2, sol: "Ten-thousands digit is 4; thousands digit is 6 (round up) → 7,850,000." },
-      { q: "A triangle has an area of 72 cm² and a perpendicular height of 12 cm. Find its base.", options: ["6 cm", "10 cm", "12 cm", "14 cm"], ans: 2, sol: "72 = (1/2) × b × 12 → 72 = 6b → b = 12 cm." },
-      { q: "A line has equation y = -3x + 8. Which ordered pair lies on the line?", options: ["(2, 2)", "(1, 6)", "(0, 3)", "(3, 2)"], ans: 0, sol: "Test (2, 2): y = -3(2) + 8 = -6 + 8 = 2. Matches!" },
-      { q: "Under the mapping x → 3x - 4, find the image of 9.", options: ["19", "21", "23", "27"], ans: 2, sol: "3(9) - 4 = 27 - 4 = 23." },
-      { q: "Find the LCM of 12, 15 and 20.", options: ["40", "50", "60", "120"], ans: 2, sol: "12 = 2²×3, 15 = 3×5, 20 = 2²×5.\nLCM = 2² × 3 × 5 = 60." }
+      { id: "q1", q: "A point P(6, -3) is rotated 180° about the origin. Find its image.", options: ["(-6, 3)", "(6, 3)", "(-3, 6)", "(-6, -3)"], ans: 0, sol: "Rule for 180° rotation about the origin: (x, y) → (-x, -y).\nSubstitute P(6, -3): x' = -6, y' = -(-3) = 3.\nImage = (-6, 3)." },
+      { id: "q2", q: "Write the next two terms: 3, 7, 15, 31, __, __.", options: ["47, 63", "62, 126", "63, 127", "64, 128"], ans: 2, sol: "Differences: 7-3=4, 15-7=8, 31-15=16.\nDifferences double each step (+32, +64).\n31 + 32 = 63, and 63 + 64 = 127." },
+      { id: "q3", q: "Convert 0.825 to a percentage.", options: ["8.25%", "82.5%", "825%", "0.825%"], ans: 1, sol: "Multiply by 100%: 0.825 × 100% = 82.5%." },
+      { id: "q4", q: "Find the HCF of 18, 30 and 48.", options: ["3", "6", "9", "12"], ans: 1, sol: "18 = 2 × 3², 30 = 2 × 3 × 5, 48 = 2⁴ × 3.\nCommon factors with lowest powers: 2 × 3 = 6." },
+      { id: "q5", q: "Which number is divisible by both 7 and 11?", options: ["154", "165", "176", "187"], ans: 0, sol: "7 × 11 = 77.\nMultiples of 77: 77, 154, 231...\nSo 154 is divisible by both 7 and 11." },
+      { id: "q6", q: "Akosua is x years old. In 9 years, she will be 25. Which equation represents the statement?", options: ["x - 9 = 25", "x + 9 = 25", "25 + x = 9", "9x = 25"], ans: 1, sol: "Current age = x. Age in 9 years = x + 9.\nEquation: x + 9 = 25." },
+      { id: "q7", q: "Find the gradient of the line through R(2, -1) and S(6, 7).", options: ["1/2", "2", "3", "4"], ans: 1, sol: "m = (y₂ - y₁) / (x₂ - x₁) = (7 - (-1)) / (6 - 2) = 8 / 4 = 2." },
+      { id: "q8", q: "Find the median of the composite numbers less than 18.", options: ["9", "10", "11", "12"], ans: 1, sol: "Composite numbers < 18: 4, 6, 8, 9, 10, 12, 14, 15, 16 (9 numbers).\nMiddle (5th) value = 10." },
+      { id: "q9", q: "Two angles of a triangle add up to 137°. Find the third angle.", options: ["33°", "43°", "47°", "53°"], ans: 1, sol: "Angles in a triangle sum to 180°.\nThird angle = 180° - 137° = 43°." },
+      { id: "q10", q: "The bearing of Lapaz from Achimota is 128°. Find the bearing of A from Lapaz.", options: ["052°", "128°", "232°", "308°"], ans: 3, sol: "Back bearing: since 128° < 180°, add 180°.\n128° + 180° = 308°." },
+      { id: "q11", q: "Expand and simplify (m - 3)(m + 5).", options: ["m² + 2m - 15", "m² + 8m - 15", "m² - 2m - 15", "m² + 2m + 15"], ans: 0, sol: "m(m + 5) - 3(m + 5) = m² + 5m - 3m - 15 = m² + 2m - 15." },
+      { id: "q12", q: "A bus travels at 72 km/h for 2.5 hours. Find the distance covered.", options: ["144 km", "160 km", "180 km", "216 km"], ans: 2, sol: "Distance = Speed × Time = 72 × 2.5 = 144 + 36 = 180 km." },
+      { id: "q13", q: "A cyclist travels 20 km north and then 15 km east. How far is the cyclist from the starting point?", options: ["25 km", "30 km", "35 km", "40 km"], ans: 0, sol: "By Pythagoras' theorem: d = √(20² + 15²) = √(400 + 225) = √625 = 25 km." },
+      { id: "q14", q: "A circle has a diameter of 35 cm. Find its circumference. [Take π = 22/7]", options: ["55 cm", "70 cm", "110 cm", "220 cm"], ans: 2, sol: "C = πd = (22/7) × 35 = 22 × 5 = 110 cm." },
+      { id: "q15", q: "A point (-4, 3) is rotated 90° anticlockwise about the origin. Find its image.", options: ["(-3, -4)", "(3, 4)", "(-3, 4)", "(4, -3)"], ans: 0, sol: "90° anticlockwise rule: (x, y) → (-y, x).\n(-4, 3) → (-3, -4)." },
+      { id: "q16", q: "The mean of 6, 8, h, 10 and 11 is 9. Find h.", options: ["8", "9", "10", "11"], ans: 2, sol: "(6 + 8 + h + 10 + 11) / 5 = 9\n35 + h = 45\nh = 45 - 35 = 10." },
+      { id: "q17", q: "Express 9.8 litres in millilitres.", options: ["98 ml", "980 ml", "9,800 ml", "98,000 ml"], ans: 2, sol: "1 litre = 1,000 ml.\n9.8 × 1,000 = 9,800 ml." },
+      { id: "q18", q: "Two fair dice are thrown. Find the probability that their sum is 7.", options: ["1/12", "1/9", "1/6", "1/4"], ans: 2, sol: "Total outcomes = 36.\nPairs summing to 7: (1,6), (2,5), (3,4), (4,3), (5,2), (6,1) = 6 pairs.\nProbability = 6/36 = 1/6." },
+      { id: "q19", q: "Round 684.756 to the nearest tenth.", options: ["684.7", "684.8", "684.75", "685.0"], ans: 1, sol: "Tenths digit is 7; next digit is 5 (round up).\n684.756 → 684.8." },
+      { id: "q20", q: "Write nine million, seventy thousand and six in figures.", options: ["9,700,006", "9,070,006", "9,007,006", "9,070,600"], ans: 1, sol: "9,000,000 + 70,000 + 6 = 9,070,006." },
+      { id: "q21", q: "A worker earns GH₵145 each day. How much will the worker earn in 12 days?", options: ["GH₵1,620", "GH₵1,680", "GH₵1,740", "GH₵1,780"], ans: 2, sol: "145 × 12 = (145 × 10) + (145 × 2) = 1,450 + 290 = GH₵1,740." },
+      { id: "q22", q: "Each exterior angle of a regular polygon is 20°. How many sides does the polygon have?", options: ["16", "18", "20", "24"], ans: 1, sol: "n = 360° / 20° = 18 sides." },
+      { id: "q23", q: "A regular octagon has side length 9.5 cm. Find its perimeter.", options: ["66.5 cm", "72.0 cm", "76.0 cm", "85.5 cm"], ans: 2, sol: "Octagon has 8 sides.\nPerimeter = 8 × 9.5 = 76.0 cm." },
+      { id: "q24", q: "Use the isosceles triangle to find h.", svg: `<svg width="220" height="150" viewBox="0 0 240 170" xmlns="http://www.w3.org/2000/svg"><polygon points="120,20 40,140 200,140" fill="none" stroke="#0f172a" stroke-width="2.5"/><line x1="120" y1="20" x2="120" y2="140" stroke="#0f172a" stroke-width="1.8" stroke-dasharray="5,4"/><rect x="120" y="128" width="12" height="12" fill="none" stroke="#0f172a" stroke-width="1.5"/><text x="56" y="78" font-size="14" font-weight="600" fill="#0f172a">13 cm</text><text x="155" y="78" font-size="14" font-weight="600" fill="#0f172a">13 cm</text><text x="126" y="92" font-size="14" font-weight="700" fill="#1d4ed8">h</text><text x="102" y="160" font-size="14" font-weight="600" fill="#0f172a">10 cm</text></svg>`, options: ["10 cm", "12 cm", "13 cm", "15 cm"], ans: 1, sol: "Half base = 10 ÷ 2 = 5 cm.\nh = √(13² - 5²) = √(169 - 25) = √144 = 12 cm." },
+      { id: "q25", q: "Round GH₵86,549 to the nearest thousand cedis.", options: ["GH₵86,000", "GH₵86,500", "GH₵87,000", "GH₵90,000"], ans: 2, sol: "Thousands digit is 6; hundreds digit is 5 (round up).\nGH₵87,000." },
+      { id: "q26", q: "The area of a square tile is 144 cm². Find its perimeter.", options: ["24 cm", "36 cm", "48 cm", "56 cm"], ans: 2, sol: "Side = √144 = 12 cm.\nPerimeter = 4 × 12 = 48 cm." },
+      { id: "q27", q: "A cube has side 7 cm. Find its total surface area.", options: ["196 cm²", "294 cm²", "343 cm²", "392 cm²"], ans: 1, sol: "TSA = 6s² = 6 × 7² = 6 × 49 = 294 cm²." },
+      { id: "q28", q: "Use the diagram to find y.", svg: `<svg width="240" height="135" viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><polygon points="45,25 225,75 45,125" fill="none" stroke="#0f172a" stroke-width="2.5"/><text x="30" y="25" font-size="14" font-weight="700" fill="#0f172a">A</text><text x="232" y="80" font-size="14" font-weight="700" fill="#0f172a">B</text><text x="30" y="132" font-size="14" font-weight="700" fill="#0f172a">C</text><text x="53" y="52" font-size="14" font-weight="700" fill="#1d4ed8">y°</text><text x="53" y="110" font-size="14" font-weight="600" fill="#0f172a">52°</text><text x="165" y="79" font-size="14" font-weight="600" fill="#0f172a">31°</text></svg>`, options: ["83°", "97°", "101°", "128°"], ans: 1, sol: "y° + 52° + 31° = 180°\ny = 180° - 83° = 97°." },
+      { id: "q29", q: "Given 4p : 12 = 5 : 15, find p.", options: ["1", "2", "3", "4"], ans: 0, sol: "4p / 12 = 5 / 15\np / 3 = 1 / 3 → p = 1." },
+      { id: "q30", q: "Translate \"five times a number decreased by 12\" into an algebraic expression.", options: ["5x + 12", "5x - 12", "12x - 5", "5 - 12x"], ans: 1, sol: "5 times x minus 12 = 5x - 12." },
+      { id: "q31", q: "A fair die is tossed once. Find the probability of obtaining an odd prime number.", options: ["1/6", "1/3", "1/2", "2/3"], ans: 1, sol: "Odd primes on a die: {3, 5} (2 outcomes out of 6).\nProbability = 2/6 = 1/3." },
+      { id: "q32", q: "A learner scores 54 out of 60 marks. Express the score as a percentage.", options: ["80%", "85%", "90%", "95%"], ans: 2, sol: "(54 / 60) × 100% = (9/10) × 100% = 90%." },
+      { id: "q33", q: "Find the equation of a line with gradient 2 and y-intercept -5.", options: ["y = 2x - 5", "y = -2x - 5", "y = 5x + 2", "y = 2x + 5"], ans: 0, sol: "y = mx + c → y = 2x - 5." },
+      { id: "q34", q: "Solve the inequality 3(2x - 1) - 4x > 5.", options: ["x > 4", "x < 4", "x > 1", "x < 1"], ans: 0, sol: "6x - 3 - 4x > 5\n2x > 8\nx > 4." },
+      { id: "q35", q: "The number line represents which inequality?", svg: `<svg width="300" height="70" viewBox="0 0 320 75" xmlns="http://www.w3.org/2000/svg"><line x1="20" y1="45" x2="300" y2="45" stroke="#0f172a" stroke-width="2"/><polygon points="15,45 25,40 25,50" fill="#0f172a"/><polygon points="305,45 295,40 295,50" fill="#0f172a"/><g font-size="12" text-anchor="middle" fill="#0f172a"><line x1="40" y1="40" x2="40" y2="50" stroke="#0f172a"/><text x="40" y="65">-4</text><line x1="70" y1="40" x2="70" y2="50" stroke="#0f172a"/><text x="70" y="65">-3</text><line x1="100" y1="40" x2="100" y2="50" stroke="#0f172a"/><text x="100" y="65">-2</text><line x1="130" y1="40" x2="130" y2="50" stroke="#0f172a"/><text x="130" y="65">-1</text><line x1="160" y1="40" x2="160" y2="50" stroke="#0f172a"/><text x="160" y="65">0</text><line x1="190" y1="40" x2="190" y2="50" stroke="#0f172a"/><text x="190" y="65">1</text><line x1="220" y1="40" x2="220" y2="50" stroke="#0f172a"/><text x="220" y="65">2</text><line x1="250" y1="40" x2="250" y2="50" stroke="#0f172a"/><text x="250" y="65">3</text><line x1="280" y1="40" x2="280" y2="50" stroke="#0f172a"/><text x="280" y="65">4</text></g><line x1="214" y1="22" x2="25" y2="22" stroke="#1d4ed8" stroke-width="3"/><polygon points="18,22 30,16 30,28" fill="#1d4ed8"/><circle cx="220" cy="22" r="6" fill="#ffffff" stroke="#1d4ed8" stroke-width="3"/></svg>`, options: ["x < 2", "x ≤ 2", "x > 2", "x ≥ 2"], ans: 0, sol: "Open circle at 2 (excluded) and arrow pointing left (< 2) → x < 2." },
+      { id: "q36", q: "Round 7,846,391 to the nearest ten thousand.", options: ["7,840,000", "7,846,000", "7,850,000", "7,900,000"], ans: 2, sol: "Ten-thousands digit is 4; thousands digit is 6 (round up) → 7,850,000." },
+      { id: "q37", q: "A triangle has an area of 72 cm² and a perpendicular height of 12 cm. Find its base.", options: ["6 cm", "10 cm", "12 cm", "14 cm"], ans: 2, sol: "72 = (1/2) × b × 12 → 72 = 6b → b = 12 cm." },
+      { id: "q38", q: "A line has equation y = -3x + 8. Which ordered pair lies on the line?", options: ["(2, 2)", "(1, 6)", "(0, 3)", "(3, 2)"], ans: 0, sol: "Test (2, 2): y = -3(2) + 8 = -6 + 8 = 2. Matches!" },
+      { id: "q39", q: "Under the mapping x → 3x - 4, find the image of 9.", options: ["19", "21", "23", "27"], ans: 2, sol: "3(9) - 4 = 27 - 4 = 23." },
+      { id: "q40", q: "Find the LCM of 12, 15 and 20.", options: ["40", "50", "60", "120"], ans: 2, sol: "12 = 2²×3, 15 = 3×5, 20 = 2²×5.\nLCM = 2² × 3 × 5 = 60." }
     ];
 
     function getDefaultState() {
@@ -816,6 +1086,7 @@
         settings: {
           quizOpen: true,
           examMinutes: 45,
+          shuffleMode: "both",
           teacherPass: "teacher123",
           adminPass: "admin123"
         },
@@ -826,15 +1097,19 @@
     }
 
     let state = getDefaultState();
-    let session = null; // { id, role, name, code }
+    let session = null;
     let activeQuiz = null;
     let reviewSubmission = null;
     let showMissedOnly = false;
 
     function saveState() {
+      syncBadge.classList.remove("synced");
       syncBadge.textContent = "Saving...";
       set(stateRef, state)
-        .then(() => { syncBadge.textContent = "● Cloud Synced"; })
+        .then(() => {
+          syncBadge.textContent = "● Cloud Synced";
+          syncBadge.classList.add("synced");
+        })
         .catch(err => {
           console.error("Cloud save failed:", err);
           syncBadge.textContent = "⚠ Sync Error";
@@ -850,15 +1125,20 @@
     onValue(stateRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
+        const loadedQuestions = (data.questions || defaultQuestions).map((q, idx) => ({
+          ...q,
+          id: q.id || `q_legacy_${idx}`
+        }));
         state = {
           classes: Array.isArray(data.classes) && data.classes.length ? data.classes : ["JHS 3A", "JHS 3B"],
           users: data.users || [],
-          questions: data.questions || defaultQuestions,
+          questions: loadedQuestions,
           submissions: data.submissions || [],
           announcements: data.announcements || [],
           settings: {
             quizOpen: true,
             examMinutes: 45,
+            shuffleMode: "both",
             teacherPass: "teacher123",
             adminPass: "admin123",
             ...(data.settings || {})
@@ -866,6 +1146,7 @@
           logs: data.logs || []
         };
         syncBadge.textContent = "● Cloud Synced";
+        syncBadge.classList.add("synced");
       } else {
         state = getDefaultState();
         saveState();
@@ -883,12 +1164,21 @@
 
     const screens = ["loginScreen", "studentDashboard", "quizScreen", "resultScreen", "teacherDashboard", "adminDashboard"];
     function showScreen(id) {
-      screens.forEach(s => document.getElementById(s).classList.toggle("hidden", s !== id));
+      screens.forEach(s => {
+        const el = document.getElementById(s);
+        if (s === id) {
+          el.classList.remove("hidden");
+          el.classList.remove("screen-anim");
+          void el.offsetWidth;
+          el.classList.add("screen-anim");
+        } else {
+          el.classList.add("hidden");
+        }
+      });
     }
 
     /* ---------------- DROPDOWNS & ROLE SWITCHING ---------------- */
     function populateDropdowns() {
-      // Teacher login selector
       const tSel = document.getElementById("teacherSelect");
       const curT = tSel.value;
       tSel.innerHTML = "";
@@ -900,7 +1190,6 @@
       });
       if (curT) tSel.value = curT;
 
-      // Student login class selector
       const stuCls = document.getElementById("stuClassSelect");
       const curStuCls = stuCls.value;
       stuCls.innerHTML = "";
@@ -919,7 +1208,15 @@
         if (curStuCls && state.classes.includes(curStuCls)) stuCls.value = curStuCls;
       }
 
-      // Admin add-user class selector
+      // Student autocomplete datalist from Excel-imported students
+      const dl = document.getElementById("registeredStudentsList");
+      dl.innerHTML = "";
+      state.users.filter(u => u.role === "student" && u.active).forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.name;
+        dl.appendChild(opt);
+      });
+
       const admCls = document.getElementById("aNewClassSelect");
       const curAdmCls = admCls.value;
       admCls.innerHTML = "";
@@ -931,7 +1228,6 @@
       });
       if (curAdmCls && state.classes.includes(curAdmCls)) admCls.value = curAdmCls;
 
-      // Teacher submission class filter
       const tFilter = document.getElementById("tClassFilter");
       const curFilter = tFilter.value;
       tFilter.innerHTML = '<option value="">All Classes</option>';
@@ -943,6 +1239,15 @@
       });
       if (curFilter) tFilter.value = curFilter;
     }
+
+    // Auto-select class when student picks their pre-uploaded name
+    document.getElementById("stuNameInput").addEventListener("input", (e) => {
+      const val = e.target.value.trim().toLowerCase();
+      const match = state.users.find(u => u.role === "student" && u.name.toLowerCase() === val);
+      if (match && state.classes.includes(match.code)) {
+        document.getElementById("stuClassSelect").value = match.code;
+      }
+    });
 
     document.querySelectorAll(".role-tab").forEach(tab => {
       tab.onclick = () => {
@@ -993,6 +1298,7 @@
       setNavSession();
       renderStudentDashboard();
       showScreen("studentDashboard");
+      showToast(`Welcome, ${name}!`, "success");
     };
 
     document.getElementById("teacherLoginBtn").onclick = () => {
@@ -1018,6 +1324,7 @@
       setNavSession();
       renderTeacherDashboard();
       showScreen("teacherDashboard");
+      showToast(`Signed in as ${teacher.name}`, "success");
     };
 
     document.getElementById("adminLoginBtn").onclick = () => {
@@ -1033,6 +1340,7 @@
       setNavSession();
       renderAdminDashboard();
       showScreen("adminDashboard");
+      showToast("Signed in as Principal Admin", "success");
     };
 
     document.getElementById("logoutBtn").onclick = () => {
@@ -1078,7 +1386,7 @@
       }
 
       document.getElementById("stuQuizDesc").textContent =
-        `Total Questions: ${state.questions.length} | Exam Duration: ${state.settings.examMinutes} minutes. Any wrong choice reveals a full step-by-step worked solution.`;
+        `Total Questions: ${state.questions.length} | Exam Duration: ${state.settings.examMinutes} minutes. Every attempt shuffles questions and options; wrong answers show step-by-step worked solutions.`;
       document.getElementById("stuQuizControls").classList.toggle("hidden", !state.settings.quizOpen);
       document.getElementById("stuQuizClosedMsg").classList.toggle("hidden", state.settings.quizOpen);
 
@@ -1114,12 +1422,37 @@
     document.getElementById("startPracticeBtn").onclick = () => startQuiz("Practice");
     document.getElementById("startTimedBtn").onclick = () => startQuiz("Exam");
 
-    /* ---------------- QUIZ ENGINE ---------------- */
+    /* ---------------- QUIZ ENGINE (WITH FULL SHUFFLE & INTERACTIVITY) ---------------- */
+    function buildShuffledQuizItems() {
+      const mode = state.settings.shuffleMode || "both";
+      const indexed = state.questions.map((q, origIdx) => ({ q, origIdx }));
+      const ordered = (mode === "both" || mode === "questions") ? fisherYatesShuffle(indexed) : indexed;
+
+      return ordered.map(({ q, origIdx }) => {
+        const optionPairs = q.options.map((text, idx) => ({ text, isCorrect: idx === q.ans }));
+        const finalPairs = (mode === "both") ? fisherYatesShuffle(optionPairs) : optionPairs;
+        const newAns = finalPairs.findIndex(p => p.isCorrect);
+        return {
+          origIdx,
+          qId: q.id || `q_${origIdx}`,
+          q: q.q,
+          svg: q.svg || "",
+          options: finalPairs.map(p => p.text),
+          ans: newAns,
+          sol: q.sol
+        };
+      });
+    }
+
     function startQuiz(mode) {
+      const items = buildShuffledQuizItems();
       activeQuiz = {
         mode,
+        items,
         current: 0,
-        answers: new Array(state.questions.length).fill(null),
+        answers: new Array(items.length).fill(null),
+        flagged: new Array(items.length).fill(false),
+        streak: 0,
         secondsLeft: state.settings.examMinutes * 60,
         timer: null
       };
@@ -1139,23 +1472,36 @@
         }, 1000);
       }
       showScreen("quizScreen");
-      renderQuizQuestion();
+      renderQuizQuestion(true);
     }
 
-    function renderQuizQuestion() {
-      const qs = state.questions;
+    function renderQuizQuestion(animateCard = false) {
+      const qs = activeQuiz.items;
       const idx = activeQuiz.current;
       const item = qs[idx];
       const chosen = activeQuiz.answers[idx];
       const answered = activeQuiz.answers.filter(a => a !== null).length;
       const correct = activeQuiz.answers.filter((a, i) => a === qs[i].ans).length;
 
+      if (animateCard) {
+        const card = document.getElementById("quizQuestionCard");
+        card.classList.remove("q-animate");
+        void card.offsetWidth;
+        card.classList.add("q-animate");
+      }
+
       document.getElementById("progressBar").style.width = `${(answered / qs.length) * 100}%`;
       document.getElementById("qBadge").textContent = `Question ${idx + 1} of ${qs.length}`;
+      document.getElementById("streakBadge").textContent = `🔥 Streak: ${activeQuiz.streak}`;
       document.getElementById("answeredBadge").textContent = `${answered} of ${qs.length} answered`;
       document.getElementById("sideScore").textContent = `${correct} / ${answered}`;
       document.getElementById("sideRemain").textContent = qs.length - answered;
       document.getElementById("qText").textContent = item.q;
+
+      const flagBtn = document.getElementById("flagQuestionBtn");
+      flagBtn.textContent = activeQuiz.flagged[idx] ? "🚩 Flagged" : "🚩 Flag";
+      flagBtn.style.borderColor = activeQuiz.flagged[idx] ? "#f59e0b" : "";
+      flagBtn.style.background = activeQuiz.flagged[idx] ? "#fef3c7" : "";
 
       const diag = document.getElementById("qDiagram");
       if (item.svg) {
@@ -1183,11 +1529,7 @@
           if (oIdx === item.ans) btn.classList.add("correct");
           if (oIdx === chosen && chosen !== item.ans) btn.classList.add("wrong");
         }
-        btn.onclick = () => {
-          if (activeQuiz.answers[idx] !== null) return;
-          activeQuiz.answers[idx] = oIdx;
-          renderQuizQuestion();
-        };
+        btn.onclick = () => selectAnswer(oIdx);
         box.appendChild(btn);
       });
 
@@ -1199,7 +1541,9 @@
         const title = document.createElement("div");
         title.style.fontWeight = "700";
         if (ok) {
-          title.textContent = "Correct! Well done.";
+          title.textContent = activeQuiz.streak >= 3
+            ? `Correct! ${activeQuiz.streak} in a row — keep it up!`
+            : "Correct! Well done.";
           fb.appendChild(title);
         } else {
           title.textContent = `Incorrect. You chose ${letters[chosen]} (${item.options[chosen]}). Correct answer: ${letters[item.ans]} (${item.options[item.ans]}).`;
@@ -1221,10 +1565,11 @@
         dot.className = "p-dot";
         dot.textContent = qIdx + 1;
         if (qIdx === idx) dot.classList.add("active");
+        if (activeQuiz.flagged[qIdx]) dot.classList.add("p-flagged");
         if (activeQuiz.answers[qIdx] !== null) {
           dot.classList.add(activeQuiz.answers[qIdx] === q.ans ? "p-correct" : "p-wrong");
         }
-        dot.onclick = () => { activeQuiz.current = qIdx; renderQuizQuestion(); };
+        dot.onclick = () => { activeQuiz.current = qIdx; renderQuizQuestion(true); };
         grid.appendChild(dot);
       });
 
@@ -1232,20 +1577,68 @@
       document.getElementById("nextBtn").textContent = idx === qs.length - 1 ? "Submit & Finish →" : "Next Question →";
     }
 
-    document.getElementById("prevBtn").onclick = () => { if (activeQuiz.current > 0) { activeQuiz.current--; renderQuizQuestion(); } };
+    function selectAnswer(oIdx) {
+      if (!activeQuiz) return;
+      const idx = activeQuiz.current;
+      if (activeQuiz.answers[idx] !== null) return;
+      activeQuiz.answers[idx] = oIdx;
+      if (oIdx === activeQuiz.items[idx].ans) {
+        activeQuiz.streak++;
+      } else {
+        activeQuiz.streak = 0;
+      }
+      renderQuizQuestion(false);
+    }
+
+    document.getElementById("flagQuestionBtn").onclick = () => {
+      if (!activeQuiz) return;
+      const idx = activeQuiz.current;
+      activeQuiz.flagged[idx] = !activeQuiz.flagged[idx];
+      renderQuizQuestion(false);
+    };
+
+    document.getElementById("prevBtn").onclick = () => {
+      if (activeQuiz.current > 0) { activeQuiz.current--; renderQuizQuestion(true); }
+    };
     document.getElementById("nextBtn").onclick = () => {
-      if (activeQuiz.current < state.questions.length - 1) { activeQuiz.current++; renderQuizQuestion(); }
+      if (activeQuiz.current < activeQuiz.items.length - 1) { activeQuiz.current++; renderQuizQuestion(true); }
       else submitQuiz();
     };
     document.getElementById("finishEarlyBtn").onclick = submitQuiz;
+
+    // Keyboard shortcuts during quiz
+    document.addEventListener("keydown", (e) => {
+      if (!activeQuiz || document.getElementById("quizScreen").classList.contains("hidden")) return;
+      const key = e.key.toUpperCase();
+      if (["A", "B", "C", "D"].includes(key)) selectAnswer(letters.indexOf(key));
+      if (["1", "2", "3", "4"].includes(key)) selectAnswer(Number(key) - 1);
+      if (e.key === "ArrowRight") document.getElementById("nextBtn").click();
+      if (e.key === "ArrowLeft") document.getElementById("prevBtn").click();
+    });
 
     function submitQuiz() {
       if (activeQuiz.timer) clearInterval(activeQuiz.timer);
       document.getElementById("navTimer").classList.add("hidden");
 
-      const total = state.questions.length;
-      const score = activeQuiz.answers.filter((a, i) => a === state.questions[i].ans).length;
+      const items = activeQuiz.items;
+      const total = items.length;
+      const score = activeQuiz.answers.filter((a, i) => a === items[i].ans).length;
       const pct = Math.round((score / total) * 100);
+
+      // Detailed item records so shuffled attempts map cleanly to analytics & review
+      const itemRecords = items.map((item, i) => {
+        const chosen = activeQuiz.answers[i];
+        return {
+          qId: item.qId,
+          origIdx: item.origIdx,
+          q: item.q,
+          selectedText: chosen === null ? "Unanswered" : `${letters[chosen]} (${item.options[chosen]})`,
+          correctText: `${letters[item.ans]} (${item.options[item.ans]})`,
+          isCorrect: chosen === item.ans,
+          sol: item.sol
+        };
+      });
+
       const sub = {
         id: "sub_" + Date.now(),
         studentName: session.name,
@@ -1255,15 +1648,15 @@
         total,
         pct,
         date: new Date().toLocaleString(),
-        answers: activeQuiz.answers.slice()
+        itemRecords
       };
       state.submissions.push(sub);
       addLog(session.name, `Completed ${activeQuiz.mode} Mode quiz (${session.code} • ${score}/${total} • ${pct}%)`);
       activeQuiz = null;
-      openResultView(sub);
+      openResultView(sub, true);
     }
 
-    function openResultView(sub) {
+    function openResultView(sub, isFresh = false) {
       reviewSubmission = sub;
       showMissedOnly = false;
       document.getElementById("resMissedBtn").textContent = "Show Missed Only";
@@ -1276,11 +1669,41 @@
         "Keep practicing! Carefully review every worked solution below.";
       renderResultReview();
       showScreen("resultScreen");
+      if (isFresh && sub.pct >= 80) launchConfetti();
     }
 
     function renderResultReview() {
       const list = document.getElementById("resReviewList");
       list.innerHTML = "";
+
+      if (reviewSubmission.itemRecords && reviewSubmission.itemRecords.length) {
+        reviewSubmission.itemRecords.forEach((rec, idx) => {
+          if (showMissedOnly && rec.isCorrect) return;
+          const div = document.createElement("div");
+          div.className = `review-item ${rec.isCorrect ? "passed" : "missed"}`;
+          const qt = document.createElement("div");
+          qt.style.fontWeight = "700";
+          qt.textContent = `Q${idx + 1}. ${rec.q}`;
+          const st = document.createElement("div");
+          st.style.fontSize = "0.9rem";
+          st.style.margin = "6px 0";
+          st.textContent = `Selected: ${rec.selectedText} | Correct: ${rec.correctText}`;
+          div.append(qt, st);
+
+          if (!rec.isCorrect) {
+            const sb = document.createElement("div");
+            sb.className = "solution-box";
+            const b = document.createElement("strong");
+            b.textContent = "Step-by-Step Solution:\n";
+            sb.append(b, document.createTextNode(rec.sol));
+            div.appendChild(sb);
+          }
+          list.appendChild(div);
+        });
+        return;
+      }
+
+      // Legacy fallback
       state.questions.forEach((item, idx) => {
         const chosen = reviewSubmission.answers ? reviewSubmission.answers[idx] : null;
         const ok = chosen === item.ans;
@@ -1343,7 +1766,13 @@
       state.questions.forEach((q, idx) => {
         let attempts = 0, right = 0;
         subs.forEach(s => {
-          if (s.answers && s.answers[idx] !== null && s.answers[idx] !== undefined) {
+          if (s.itemRecords && s.itemRecords.length) {
+            const match = s.itemRecords.find(r => r.qId === q.id || r.q === q.q);
+            if (match && match.selectedText !== "Unanswered") {
+              attempts++;
+              if (match.isCorrect) right++;
+            }
+          } else if (s.answers && s.answers[idx] !== null && s.answers[idx] !== undefined) {
             attempts++;
             if (s.answers[idx] === q.ans) right++;
           }
@@ -1413,6 +1842,28 @@
         const td2 = document.createElement("td"); td2.textContent = q.q;
         const td3 = document.createElement("td"); td3.textContent = `${letters[q.ans]} (${q.options[q.ans]})`;
         const td4 = document.createElement("td");
+        td4.style.display = "flex"; td4.style.gap = "5px"; td4.style.flexWrap = "wrap";
+
+        const upBtn = document.createElement("button");
+        upBtn.className = "btn btn-outline btn-sm";
+        upBtn.textContent = "↑";
+        upBtn.disabled = idx === 0;
+        upBtn.onclick = () => {
+          [state.questions[idx - 1], state.questions[idx]] = [state.questions[idx], state.questions[idx - 1]];
+          saveState();
+          renderTeacherQuestions();
+        };
+
+        const downBtn = document.createElement("button");
+        downBtn.className = "btn btn-outline btn-sm";
+        downBtn.textContent = "↓";
+        downBtn.disabled = idx === state.questions.length - 1;
+        downBtn.onclick = () => {
+          [state.questions[idx + 1], state.questions[idx]] = [state.questions[idx], state.questions[idx + 1]];
+          saveState();
+          renderTeacherQuestions();
+        };
+
         const del = document.createElement("button");
         del.className = "btn btn-danger btn-sm";
         del.textContent = "Delete";
@@ -1421,12 +1872,20 @@
           state.questions.splice(idx, 1);
           addLog(session.name, `Removed question #${idx + 1} from bank`);
           renderTeacherDashboard();
+          showToast("Question removed", "info");
         };
-        td4.appendChild(del);
+        td4.append(upBtn, downBtn, del);
         tr.append(td1, td2, td3, td4);
         tbody.appendChild(tr);
       });
     }
+
+    document.getElementById("shuffleBankBtn").onclick = () => {
+      state.questions = fisherYatesShuffle(state.questions);
+      addLog(session.name, "Shuffled question bank order");
+      renderTeacherDashboard();
+      showToast("Question bank shuffled and saved to cloud!", "success");
+    };
 
     document.getElementById("addQuestionBtn").onclick = () => {
       const q = document.getElementById("newQText").value.trim();
@@ -1437,10 +1896,11 @@
         alert("Please fill in the question, all 4 options, and the worked solution.");
         return;
       }
-      state.questions.push({ q, options, ans, sol });
+      state.questions.push({ id: "q_" + Date.now(), q, options, ans, sol });
       addLog(session.name, "Added a new question to the Mathematics bank");
       ["newQText", "newOptA", "newOptB", "newOptC", "newOptD", "newQSol"].forEach(id => document.getElementById(id).value = "");
       renderTeacherDashboard();
+      showToast("New question added to bank!", "success");
     };
 
     function renderTeacherNotices() {
@@ -1473,6 +1933,7 @@
       addLog(session.name, "Posted a new announcement");
       document.getElementById("newNoticeInput").value = "";
       renderTeacherNotices();
+      showToast("Announcement posted!", "success");
     };
 
     document.getElementById("tResetPassBtn").onclick = () => {
@@ -1497,6 +1958,7 @@
         document.getElementById("tConfirmPassInput").value = "";
         msg.style.color = "var(--success)";
         msg.textContent = "Password updated successfully!";
+        showToast("Teacher password updated!", "success");
         setTimeout(() => { msg.textContent = ""; }, 3000);
       }
     };
@@ -1514,7 +1976,7 @@
       a.click();
     };
 
-    /* ---------------- ADMIN DASHBOARD ---------------- */
+    /* ---------------- ADMIN DASHBOARD & EXCEL STUDENT UPLOAD ---------------- */
     document.querySelectorAll("#adminTabs .sub-tab").forEach(btn => {
       btn.onclick = () => {
         document.querySelectorAll("#adminTabs .sub-tab").forEach(b => b.classList.remove("active"));
@@ -1531,6 +1993,114 @@
       document.getElementById("aNewStaffWrap").classList.toggle("hidden", isStudent);
     };
 
+    // Download Excel Template
+    document.getElementById("downloadExcelTemplateBtn").onclick = () => {
+      if (typeof XLSX === "undefined") {
+        return alert("Spreadsheet library is still loading. Check your internet connection and try again.");
+      }
+      const sampleRows = [
+        { "Full Name": "Kwame Mensah", "Class": state.classes[0] || "JHS 3A" },
+        { "Full Name": "Ama Serwaa", "Class": state.classes[1] || state.classes[0] || "JHS 3B" },
+        { "Full Name": "Kofi Boateng", "Class": state.classes[0] || "JHS 3A" }
+      ];
+      const ws = XLSX.utils.json_to_sheet(sampleRows);
+      ws["!cols"] = [{ wch: 28 }, { wch: 18 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Students");
+      XLSX.writeFile(wb, "GBAT_Students_Template.xlsx");
+      showToast("Excel template downloaded!", "success");
+    };
+
+    // Excel Drag & Drop + File Input Handlers
+    const dropZone = document.getElementById("excelDropZone");
+    const fileInput = document.getElementById("excelFileInput");
+
+    dropZone.onclick = () => fileInput.click();
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      if (e.dataTransfer.files.length) handleExcelFile(e.dataTransfer.files[0]);
+    });
+    fileInput.onchange = (e) => {
+      if (e.target.files.length) handleExcelFile(e.target.files[0]);
+      fileInput.value = "";
+    };
+
+    function handleExcelFile(file) {
+      if (typeof XLSX === "undefined") {
+        return alert("Spreadsheet parser unavailable. Check internet connection.");
+      }
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+
+          if (!rows.length) {
+            return showToast("The uploaded spreadsheet is empty.", "error");
+          }
+
+          let addedCount = 0;
+          let updatedCount = 0;
+          let classesCreated = 0;
+
+          rows.forEach((row, index) => {
+            // Flexible header matching (Full Name / Name / Student Name, Class / Form / Grade)
+            const keys = Object.keys(row);
+            const nameKey = keys.find(k => /name|student/i.test(k)) || keys[0];
+            const classKey = keys.find(k => /class|form|grade|stream/i.test(k)) || keys[1];
+
+            const studentName = String(row[nameKey] || "").trim();
+            const studentClass = String(row[classKey] || state.classes[0] || "JHS 3A").trim();
+
+            if (!studentName) return;
+
+            if (studentClass && !state.classes.some(c => c.toLowerCase() === studentClass.toLowerCase())) {
+              state.classes.push(studentClass);
+              classesCreated++;
+            }
+
+            const existing = state.users.find(u => u.role === "student" && u.name.toLowerCase() === studentName.toLowerCase());
+            if (existing) {
+              existing.code = studentClass;
+              existing.active = true;
+              updatedCount++;
+            } else {
+              state.users.push({
+                id: "u" + Date.now() + "_" + index,
+                name: studentName,
+                role: "student",
+                code: studentClass,
+                active: true
+              });
+              addedCount++;
+            }
+          });
+
+          const summary = `Excel Import Complete: ${addedCount} new students added, ${updatedCount} updated${classesCreated ? `, ${classesCreated} new classes created` : ""}.`;
+          const box = document.getElementById("excelUploadSummary");
+          box.textContent = summary;
+          box.classList.remove("hidden");
+
+          addLog("Principal Admin", `Imported ${addedCount + updatedCount} students from Excel (${file.name})`);
+          populateDropdowns();
+          renderAdminDashboard();
+          showToast(summary, "success");
+        } catch (err) {
+          console.error(err);
+          showToast("Could not read spreadsheet. Please use .xlsx, .xls, or .csv.", "error");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
     function renderAdminDashboard() {
       const students = state.users.filter(u => u.role === "student");
       const subs = state.submissions;
@@ -1540,6 +2110,7 @@
       document.getElementById("aKpiClasses").textContent = state.classes.length;
       document.getElementById("aKpiAvg").textContent = `${avg}%`;
       document.getElementById("aKpiStatus").textContent = state.settings.quizOpen ? "OPEN" : "CLOSED";
+      document.getElementById("aUserCount").textContent = state.users.length;
 
       // Render Class Tags
       const classBox = document.getElementById("aClassList");
@@ -1566,11 +2137,9 @@
         });
       }
 
-      // Render Passwords
       document.getElementById("aAdminPassSetting").value = state.settings.adminPass || "admin123";
       document.getElementById("aTeacherPassSetting").value = state.settings.teacherPass || "teacher123";
 
-      // Render Users Table
       const tbody = document.getElementById("aUsersBody");
       tbody.innerHTML = "";
       state.users.forEach((u, idx) => {
@@ -1603,7 +2172,7 @@
           rst.onclick = () => {
             u.password = "";
             addLog("Principal Admin", `Reset password for ${u.name} to default teacher password`);
-            alert(`${u.name}'s password has been reset to the Default Teacher Password.`);
+            showToast(`${u.name}'s password reset to Default Teacher Password`, "info");
           };
           tdA.appendChild(rst);
         }
@@ -1624,6 +2193,7 @@
 
       document.getElementById("aQuizOpenSelect").value = String(state.settings.quizOpen);
       document.getElementById("aExamMinsInput").value = state.settings.examMinutes;
+      document.getElementById("aShuffleModeSelect").value = state.settings.shuffleMode || "both";
 
       const logBody = document.getElementById("aLogsBody");
       logBody.innerHTML = "";
@@ -1647,6 +2217,7 @@
       document.getElementById("aNewClassInput").value = "";
       populateDropdowns();
       renderAdminDashboard();
+      showToast(`Class "${cls}" added!`, "success");
     };
 
     document.getElementById("aSavePassBtn").onclick = () => {
@@ -1658,6 +2229,7 @@
       addLog("Principal Admin", "Updated Admin and Default Teacher passwords");
       const msg = document.getElementById("aPassSavedMsg");
       msg.textContent = "Passwords saved to cloud!";
+      showToast("Admin & Teacher passwords saved!", "success");
       setTimeout(() => { msg.textContent = ""; }, 2500);
     };
 
@@ -1676,13 +2248,16 @@
       document.getElementById("aNewStaffCode").value = "";
       populateDropdowns();
       renderAdminDashboard();
+      showToast(`Added ${name} (${code})`, "success");
     };
 
     document.getElementById("aSaveSettingsBtn").onclick = () => {
       state.settings.quizOpen = document.getElementById("aQuizOpenSelect").value === "true";
       state.settings.examMinutes = Math.max(5, Number(document.getElementById("aExamMinsInput").value) || 45);
-      addLog("Principal Admin", `Updated exam settings (Open: ${state.settings.quizOpen}, Duration: ${state.settings.examMinutes} mins)`);
+      state.settings.shuffleMode = document.getElementById("aShuffleModeSelect").value;
+      addLog("Principal Admin", `Updated exam settings (Open: ${state.settings.quizOpen}, Duration: ${state.settings.examMinutes} mins, Shuffle: ${state.settings.shuffleMode})`);
       document.getElementById("aSettingsSaved").textContent = "Settings saved!";
+      showToast("Exam settings updated!", "success");
       setTimeout(() => document.getElementById("aSettingsSaved").textContent = "", 2500);
       renderAdminDashboard();
     };
@@ -1701,6 +2276,7 @@
       saveState();
       populateDropdowns();
       renderAdminDashboard();
+      showToast("Database reset to default", "info");
     };
   </script>
 </body>
