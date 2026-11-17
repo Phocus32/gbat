@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GBAT Online Portal | Admin, Teacher & Student Dashboards</title>
+  <style>
+    :root {
+      --primary: #1d4ed8;
+      --primary-dark: #1e3a8a;
+      --primary-soft: #eff6ff;
+      --success: #15803d;
+      --success-bg: #dcfce7;
+      --danger: #b91c1c;
+      --danger-bg: #fee2e2;
+      --warn: #b45309;
+      --warn-bg: #fff7ed;
+      --warn-border: #fdba74;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #cbd5e1;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .hidden { display: none !important; }
+
+    /* Navbar */
+    .navbar {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: #fff;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.15);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-badge {
+      background: #fff;
+      color: var(--primary-dark);
+      font-weight: 900;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    .brand-title { font-weight: 700; font-size: 1.05rem; }
+    .brand-sub { font-size: 0.78rem; opacity: 0.85; }
+    .nav-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .pill {
+      background: rgba(255, 255, 255, 0.16);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+    .btn-nav {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.35);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .btn-nav:hover { background: rgba(255,255,255,0.3); }
+
+    .container { max-width: 1140px; margin: 24px auto; padding: 0 16px 56px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+      margin-bottom: 20px;
+    }
+
+    /* Buttons & Inputs */
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.92rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-sm { padding: 6px 11px; font-size: 0.82rem; border-radius: 6px; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: #e2e8f0; color: var(--text); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-outline { background: #fff; border: 1px solid var(--border); color: var(--text); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-block { width: 100%; }
+
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 0.84rem; font-weight: 600; margin-bottom: 5px; color: var(--muted); }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.94rem;
+      font-family: inherit;
+      background: #fff;
+    }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+
+    /* Login Portal */
+    .login-wrap { max-width: 520px; margin: 36px auto; }
+    .role-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px; }
+    .role-tab {
+      padding: 10px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: #f8fafc;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      color: var(--muted);
+    }
+    .role-tab.active { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-dark); }
+
+    /* Dashboard Grids & Tabs */
+    .dash-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .dash-header h1 { margin: 0; font-size: 1.45rem; }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .kpi-label { font-size: 0.82rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .kpi-value { font-size: 1.8rem; font-weight: 800; color: var(--primary-dark); margin-top: 4px; }
+
+    .sub-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+    .sub-tab {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .sub-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    th, td { padding: 11px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    th { background: #f8fafc; font-weight: 700; color: var(--muted); font-size: 0.82rem; text-transform: uppercase; }
+    .badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .b-green { background: var(--success-bg); color: var(--success); }
+    .b-red { background: var(--danger-bg); color: var(--danger); }
+    .b-blue { background: var(--primary-soft); color: var(--primary); }
+    .b-warn { background: var(--warn-bg); color: var(--warn); }
+
+    /* Class tags */
+    .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .class-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary-soft);
+      border: 1px solid #bfdbfe;
+      color: var(--primary-dark);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+    .class-tag button {
+      background: none;
+      border: none;
+      color: var(--danger);
+      font-weight: 800;
+      cursor: pointer;
+      padding: 0 2px;
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    /* Announcements */
+    .notice {
+      background: var(--primary-soft);
+      border-left: 4px solid var(--primary);
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .notice-meta { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+    /* Quiz Workspace */
+    .quiz-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; }
+    @media (max-width: 860px) { .quiz-layout { grid-template-columns: 1fr; } }
+    .progress-wrap { width: 100%; height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-bottom: 16px; }
+    .progress-bar { height: 100%; width: 0%; background: var(--primary); transition: width 0.25s ease; }
+    .q-text { font-size: 1.12rem; font-weight: 600; margin: 12px 0 16px; }
+    .diagram {
+      margin: 10px 0 16px;
+      display: flex;
+      justify-content: center;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .options { display: grid; gap: 10px; }
+    .opt-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      text-align: left;
+      padding: 12px 15px;
+      font-size: 1rem;
+      background: #fff;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .opt-btn:hover:not(:disabled) { border-color: var(--primary); background: var(--primary-soft); }
+    .opt-btn:disabled { cursor: default; }
+    .opt-letter {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.88rem;
+      flex-shrink: 0;
+    }
+    .opt-btn.correct { border-color: var(--success); background: var(--success-bg); }
+    .opt-btn.correct .opt-letter { background: var(--success); color: #fff; }
+    .opt-btn.wrong { border-color: var(--danger); background: var(--danger-bg); }
+    .opt-btn.wrong .opt-letter { background: var(--danger); color: #fff; }
+
+    .feedback { margin-top: 16px; padding: 15px; border-radius: 10px; display: none; }
+    .feedback.show { display: block; }
+    .feedback.correct { background: var(--success-bg); border: 1px solid #86efac; color: #14532d; }
+    .feedback.wrong { background: var(--warn-bg); border: 1px solid var(--warn-border); color: #431407; }
+    .solution-box {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(0,0,0,0.2);
+      white-space: pre-line;
+      font-size: 0.94rem;
+    }
+    .palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
+    .p-dot {
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+    .p-dot.active { border: 2px solid var(--primary); }
+    .p-dot.p-correct { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+    .p-dot.p-wrong { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
+
+    .review-item {
+      border: 1px solid var(--border);
+      border-left-width: 5px;
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 12px;
+      background: #fff;
+    }
+    .review-item.passed { border-left-color: var(--success); }
+    .review-item.missed { border-left-color: var(--danger); }
+
+    @media print {
+      .navbar, .no-print { display: none !important; }
+      body { background: #fff; }
+      .card { border: none; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="brand">
+      <div class="brand-badge">GBAT</div>
+      <div>
+        <div class="brand-title">GBAT Online Assessment Portal</div>
+        <div class="brand-sub">Mathematics Mock • Admin, Teacher &amp; Student System</div>
+      </div>
+    </div>
+    <div class="nav-right">
+      <span class="pill" id="syncStatus">Connecting...</span>
+      <span class="pill hidden" id="navRole"></span>
+      <span class="pill hidden" id="navUser"></span>
+      <span class="pill hidden" id="navTimer">⏱ 45:00</span>
+      <button class="btn-nav hidden" id="logoutBtn">Switch Role / Logout</button>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <!-- 1. LOGIN / PORTAL ENTRY -->
+    <section class="card login-wrap" id="loginScreen">
+      <h2 style="margin:0 0 6px;">Sign In to GBAT Portal</h2>
+      <p style="margin:0 0 18px; color:var(--muted); font-size:0.92rem;">Choose your dashboard role to continue.</p>
+
+      <div class="role-tabs">
+        <button class="role-tab active" data-role="student">Student</button>
+        <button class="role-tab" data-role="teacher">Teacher</button>
+        <button class="role-tab" data-role="admin">Admin</button>
+      </div>
+
+      <!-- Student Login -->
+      <div id="loginStudentForm">
+        <div class="field">
+          <label>Student Full Name</label>
+          <input type="text" id="stuNameInput" placeholder="Enter your full name" />
+        </div>
+        <div class="field">
+          <label>Select Class</label>
+          <select id="stuClassSelect"></select>
+        </div>
+        <button class="btn btn-primary btn-block" id="stuLoginBtn">Enter Student Dashboard</button>
+      </div>
+
+      <!-- Teacher Login -->
+      <div id="loginTeacherForm" class="hidden">
+        <div class="field">
+          <label>Select Teacher Account</label>
+          <select id="teacherSelect"></select>
+        </div>
+        <div class="field">
+          <label>Teacher Password</label>
+          <input type="password" id="teacherPassInput" placeholder="Enter teacher password" />
+        </div>
+        <button class="btn btn-primary btn-block" id="teacherLoginBtn">Enter Teacher Dashboard</button>
+      </div>
+
+      <!-- Admin Login -->
+      <div id="loginAdminForm" class="hidden">
+        <div class="field">
+          <label>Admin Username</label>
+          <input type="text" id="adminUserInput" value="Principal Admin" readonly />
+        </div>
+        <div class="field">
+          <label>Admin Password</label>
+          <input type="password" id="adminPassInput" placeholder="Enter admin password" />
+        </div>
+        <button class="btn btn-primary btn-block" id="adminLoginBtn">Enter Admin Dashboard</button>
+      </div>
+
+      <p id="loginError" style="color:var(--danger); font-weight:600; font-size:0.9rem; margin-top:12px;"></p>
+    </section>
+
+    <!-- 2. STUDENT DASHBOARD -->
+    <section id="studentDashboard" class="hidden">
+      <div class="dash-header">
+        <div>
+          <h1 id="stuWelcome">Student Dashboard</h1>
+          <span style="color:var(--muted); font-size:0.92rem;" id="stuMeta"></span>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">Attempts Completed</div><div class="kpi-value" id="stuKpiAttempts">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Average Score</div><div class="kpi-value" id="stuKpiAvg">0%</div></div>
+        <div class="kpi-card"><div class="kpi-label">Best Score</div><div class="kpi-value" id="stuKpiBest">0%</div></div>
+        <div class="kpi-card"><div class="kpi-label">Questions in Bank</div><div class="kpi-value" id="stuKpiQs">40</div></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Teacher Announcements</h3>
+        <div id="stuAnnouncements"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">GBAT Mathematics Paper 1 (Multiple Choice)</h3>
+        <p style="color:var(--muted); margin-bottom:16px;" id="stuQuizDesc"></p>
+        <div id="stuQuizControls" style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="startPracticeBtn">Start Practice Mode (Untimed)</button>
+          <button class="btn btn-secondary" id="startTimedBtn">Start Exam Mode (Timed)</button>
+        </div>
+        <p id="stuQuizClosedMsg" class="hidden" style="color:var(--danger); font-weight:700;">
+          This assessment is currently closed by the Administrator.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">My Past Attempts &amp; Score History</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Class</th><th>Mode</th><th>Score</th><th>Percentage</th><th>Action</th></tr>
+            </thead>
+            <tbody id="stuHistoryBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2B. QUIZ RUNNER -->
+    <section id="quizScreen" class="hidden">
+      <div class="quiz-layout">
+        <div class="card">
+          <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="badge b-blue" id="qBadge">Question 1</span>
+            <span style="font-size:0.86rem; color:var(--muted);" id="answeredBadge">0 answered</span>
+          </div>
+          <div class="q-text" id="qText"></div>
+          <div class="diagram hidden" id="qDiagram"></div>
+          <div class="options" id="optionsBox"></div>
+          <div class="feedback" id="feedbackBox"></div>
+          <div style="display:flex; justify-content:space-between; margin-top:20px; gap:10px;">
+            <button class="btn btn-secondary" id="prevBtn">← Previous</button>
+            <button class="btn btn-primary" id="nextBtn">Next Question →</button>
+          </div>
+        </div>
+
+        <aside class="card">
+          <div style="font-weight:700; margin-bottom:8px;">Live Progress</div>
+          <div style="font-size:0.9rem; display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span>Score:</span><strong id="sideScore">0 / 0</strong>
+          </div>
+          <div style="font-size:0.9rem; display:flex; justify-content:space-between; margin-bottom:10px;">
+            <span>Remaining:</span><strong id="sideRemain">40</strong>
+          </div>
+          <div style="font-size:0.8rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Navigator</div>
+          <div class="palette-grid" id="paletteGrid"></div>
+          <button class="btn btn-outline btn-block" id="finishEarlyBtn" style="margin-top:16px;">Submit &amp; Finish</button>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 2C. RESULT & WORKED REVIEW SCREEN -->
+    <section class="card hidden" id="resultScreen">
+      <div style="text-align:center; padding-bottom:18px; border-bottom:1px solid var(--border);">
+        <span class="badge b-blue">Assessment Report</span>
+        <h2 id="resStudentTitle" style="margin:8px 0 4px;"></h2>
+        <div style="font-size:2.5rem; font-weight:800; color:var(--primary);" id="resScoreBig"></div>
+        <p id="resRemark" style="color:var(--muted); margin:6px 0 16px;"></p>
+        <div class="no-print" style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="resBackBtn">Back to Dashboard</button>
+          <button class="btn btn-secondary" id="resMissedBtn">Show Missed Only</button>
+          <button class="btn btn-outline" onclick="window.print()">Print / Save PDF</button>
+        </div>
+      </div>
+      <div id="resReviewList"></div>
+    </section>
+
+    <!-- 3. TEACHER DASHBOARD -->
+    <section id="teacherDashboard" class="hidden">
+      <div class="dash-header">
+        <div>
+          <h1>Teacher Dashboard</h1>
+          <span style="color:var(--muted); font-size:0.92rem;" id="teacherMeta"></span>
+        </div>
+        <button class="btn btn-success btn-sm" id="exportCsvBtn">Download Results (CSV)</button>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">Total Submissions</div><div class="kpi-value" id="tKpiSubs">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Class Average</div><div class="kpi-value" id="tKpiAvg">0%</div></div>
+        <div class="kpi-card"><div class="kpi-label">Highest Score</div><div class="kpi-value" id="tKpiHigh">0%</div></div>
+        <div class="kpi-card"><div class="kpi-label">Hardest Question</div><div class="kpi-value" id="tKpiHard">-</div></div>
+      </div>
+
+      <div class="sub-tabs" id="teacherTabs">
+        <button class="sub-tab active" data-tab="tSubs">Student Submissions</button>
+        <button class="sub-tab" data-tab="tAnalytics">Question Analytics</button>
+        <button class="sub-tab" data-tab="tQuestions">Question Bank</button>
+        <button class="sub-tab" data-tab="tNotices">Announcements</button>
+        <button class="sub-tab" data-tab="tSecurity">Reset My Password</button>
+      </div>
+
+      <!-- T1: Submissions -->
+      <div class="card" id="tSubs">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+          <h3 style="margin:0;">Student Performance Records</h3>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <select id="tClassFilter" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:#fff;">
+              <option value="">All Classes</option>
+            </select>
+            <input type="text" id="tSearchInput" placeholder="Search student name or class..." style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; width:240px;" />
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Student Name</th><th>Class</th><th>Mode</th><th>Score</th><th>%</th><th>Date</th><th>Review</th></tr>
+            </thead>
+            <tbody id="tSubsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- T2: Question Analytics -->
+      <div class="card hidden" id="tAnalytics">
+        <h3 style="margin-top:0;">Item Analysis (Accuracy per Question)</h3>
+        <p style="color:var(--muted); font-size:0.9rem;">Identify topics where students struggle most so you can reteach them.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Question</th><th>Attempts</th><th>Correct</th><th>Accuracy</th></tr>
+            </thead>
+            <tbody id="tAnalyticsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- T3: Question Bank -->
+      <div class="card hidden" id="tQuestions">
+        <h3 style="margin-top:0;">Add New Question to Bank</h3>
+        <div class="field"><label>Question Text</label><input type="text" id="newQText" placeholder="Enter math question..." /></div>
+        <div class="form-grid">
+          <div class="field"><label>Option A</label><input type="text" id="newOptA" /></div>
+          <div class="field"><label>Option B</label><input type="text" id="newOptB" /></div>
+          <div class="field"><label>Option C</label><input type="text" id="newOptC" /></div>
+          <div class="field"><label>Option D</label><input type="text" id="newOptD" /></div>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Correct Answer</label>
+            <select id="newQAns">
+              <option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Step-by-Step Worked Solution (shown when student is wrong)</label>
+            <textarea id="newQSol" rows="2" placeholder="Explain each step clearly..."></textarea>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="addQuestionBtn">+ Add Question</button>
+
+        <h3 style="margin-top:26px;">Current Question Bank (<span id="qBankCount"></span>)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Question</th><th>Correct</th><th>Action</th></tr></thead>
+            <tbody id="tQuestionsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- T4: Announcements -->
+      <div class="card hidden" id="tNotices">
+        <h3 style="margin-top:0;">Post Class Announcement</h3>
+        <div class="field">
+          <label>Message for Students</label>
+          <textarea id="newNoticeInput" rows="2" placeholder="e.g. Complete all 40 questions before Friday..."></textarea>
+        </div>
+        <button class="btn btn-primary" id="postNoticeBtn">Post Announcement</button>
+        <div id="tNoticesList" style="margin-top:18px;"></div>
+      </div>
+
+      <!-- T5: Teacher Password Reset -->
+      <div class="card hidden" id="tSecurity">
+        <h3 style="margin-top:0;">Reset My Teacher Password</h3>
+        <p style="color:var(--muted); font-size:0.9rem;">Set a personal password for your teacher account. Updates sync immediately to the cloud.</p>
+        <div class="form-grid" style="max-width:600px;">
+          <div class="field">
+            <label>New Password</label>
+            <input type="password" id="tNewPassInput" placeholder="Enter new password" />
+          </div>
+          <div class="field">
+            <label>Confirm New Password</label>
+            <input type="password" id="tConfirmPassInput" placeholder="Confirm new password" />
+          </div>
+        </div>
+        <button class="btn btn-primary" id="tResetPassBtn">Update My Password</button>
+        <span id="tPassSavedMsg" style="margin-left:10px; font-weight:600;"></span>
+      </div>
+    </section>
+
+    <!-- 4. ADMIN DASHBOARD -->
+    <section id="adminDashboard" class="hidden">
+      <div class="dash-header">
+        <div>
+          <h1>Administrator Dashboard</h1>
+          <span style="color:var(--muted); font-size:0.92rem;">System-wide control, class setup, user management, and password controls</span>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">Registered Students</div><div class="kpi-value" id="aKpiStudents">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Active Classes</div><div class="kpi-value" id="aKpiClasses">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">School-Wide Avg</div><div class="kpi-value" id="aKpiAvg">0%</div></div>
+        <div class="kpi-card"><div class="kpi-label">Assessment Status</div><div class="kpi-value" id="aKpiStatus">OPEN</div></div>
+      </div>
+
+      <div class="sub-tabs" id="adminTabs">
+        <button class="sub-tab active" data-tab="aClasses">Classes &amp; Passwords</button>
+        <button class="sub-tab" data-tab="aUsers">User Management</button>
+        <button class="sub-tab" data-tab="aSettings">Exam Controls</button>
+        <button class="sub-tab" data-tab="aLogs">Activity Logs &amp; Backup</button>
+      </div>
+
+      <!-- A0: Classes & Password Management -->
+      <div class="card" id="aClasses">
+        <h3 style="margin-top:0;">Manage Student Classes</h3>
+        <p style="color:var(--muted); font-size:0.9rem; margin-top:-6px;">Classes added here appear immediately in the Student Sign-In dropdown.</p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; max-width:520px;">
+          <input type="text" id="aNewClassInput" placeholder="e.g. JHS 3A, JHS 3B, SHS 1 Gold" style="flex:1; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:0.94rem;" />
+          <button class="btn btn-primary" id="aAddClassBtn">+ Add Class</button>
+        </div>
+        <div class="tag-list" id="aClassList"></div>
+
+        <hr style="border:none; border-top:1px solid var(--border); margin:24px 0;" />
+
+        <h3 style="margin-top:0;">Reset Admin &amp; Default Teacher Passwords</h3>
+        <div class="form-grid" style="max-width:650px;">
+          <div class="field">
+            <label>Admin Dashboard Password</label>
+            <input type="text" id="aAdminPassSetting" />
+          </div>
+          <div class="field">
+            <label>Default Teacher Password (for teachers without a custom password)</label>
+            <input type="text" id="aTeacherPassSetting" />
+          </div>
+        </div>
+        <button class="btn btn-primary" id="aSavePassBtn">Save Passwords</button>
+        <span id="aPassSavedMsg" style="margin-left:10px; color:var(--success); font-weight:600;"></span>
+      </div>
+
+      <!-- A1: Users -->
+      <div class="card hidden" id="aUsers">
+        <h3 style="margin-top:0;">Add New Student or Teacher</h3>
+        <div class="form-grid">
+          <div class="field"><label>Full Name</label><input type="text" id="aNewName" placeholder="e.g. Yaw Boateng" /></div>
+          <div class="field">
+            <label>Role</label>
+            <select id="aNewRole">
+              <option value="student">Student</option>
+              <option value="teacher">Teacher</option>
+            </select>
+          </div>
+          <div class="field" id="aNewClassWrap">
+            <label>Assign Class</label>
+            <select id="aNewClassSelect"></select>
+          </div>
+          <div class="field hidden" id="aNewStaffWrap">
+            <label>Staff ID</label>
+            <input type="text" id="aNewStaffCode" placeholder="e.g. TCH-003" />
+          </div>
+        </div>
+        <button class="btn btn-primary" id="aAddUserBtn">+ Create User</button>
+
+        <h3 style="margin-top:24px;">All Portal Accounts</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Role</th><th>Class / Staff ID</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="aUsersBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- A2: Exam Controls -->
+      <div class="card hidden" id="aSettings">
+        <h3 style="margin-top:0;">Assessment Configuration</h3>
+        <div class="form-grid">
+          <div class="field">
+            <label>Quiz Availability for Students</label>
+            <select id="aQuizOpenSelect">
+              <option value="true">Open (Students can take quiz)</option>
+              <option value="false">Closed (Locked for maintenance/review)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Exam Mode Duration (Minutes)</label>
+            <input type="number" id="aExamMinsInput" min="5" max="180" />
+          </div>
+        </div>
+        <button class="btn btn-primary" id="aSaveSettingsBtn">Save Settings</button>
+        <span id="aSettingsSaved" style="margin-left:10px; color:var(--success); font-weight:600;"></span>
+      </div>
+
+      <!-- A3: Activity Logs & Backup -->
+      <div class="card hidden" id="aLogs">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+          <h3 style="margin:0;">System Activity Logs</h3>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-secondary btn-sm" id="exportJsonBtn">Export Backup (JSON)</button>
+            <button class="btn btn-danger btn-sm" id="resetDemoBtn">Reset Database</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Timestamp</th><th>Actor</th><th>Action</th></tr></thead>
+            <tbody id="aLogsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDNL-VVWcySHu7bKDPV0TDs8DkxiFqxPz4",
+      authDomain: "gbat-quiz.firebaseapp.com",
+      databaseURL: "https://gbat-quiz-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "gbat-quiz",
+      storageBucket: "gbat-quiz.firebasestorage.app",
+      messagingSenderId: "187495273608",
+      appId: "1:187495273608:web:32a9924afa27702b907b3d",
+      measurementId: "G-YB2YM46VCY"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const stateRef = ref(db, "gbat_portal_v1");
+    const syncBadge = document.getElementById("syncStatus");
+
+    const letters = ["A", "B", "C", "D"];
+
+    const defaultQuestions = [
+      { q: "A point P(6, -3) is rotated 180° about the origin. Find its image.", options: ["(-6, 3)", "(6, 3)", "(-3, 6)", "(-6, -3)"], ans: 0, sol: "Rule for 180° rotation about the origin: (x, y) → (-x, -y).\nSubstitute P(6, -3): x' = -6, y' = -(-3) = 3.\nImage = (-6, 3)." },
+      { q: "Write the next two terms: 3, 7, 15, 31, __, __.", options: ["47, 63", "62, 126", "63, 127", "64, 128"], ans: 2, sol: "Differences: 7-3=4, 15-7=8, 31-15=16.\nDifferences double each step (+32, +64).\n31 + 32 = 63, and 63 + 64 = 127." },
+      { q: "Convert 0.825 to a percentage.", options: ["8.25%", "82.5%", "825%", "0.825%"], ans: 1, sol: "Multiply by 100%: 0.825 × 100% = 82.5%." },
+      { q: "Find the HCF of 18, 30 and 48.", options: ["3", "6", "9", "12"], ans: 1, sol: "18 = 2 × 3², 30 = 2 × 3 × 5, 48 = 2⁴ × 3.\nCommon factors with lowest powers: 2 × 3 = 6." },
+      { q: "Which number is divisible by both 7 and 11?", options: ["154", "165", "176", "187"], ans: 0, sol: "7 × 11 = 77.\nMultiples of 77: 77, 154, 231...\nSo 154 is divisible by both 7 and 11." },
+      { q: "Akosua is x years old. In 9 years, she will be 25. Which equation represents the statement?", options: ["x - 9 = 25", "x + 9 = 25", "25 + x = 9", "9x = 25"], ans: 1, sol: "Current age = x. Age in 9 years = x + 9.\nEquation: x + 9 = 25." },
+      { q: "Find the gradient of the line through R(2, -1) and S(6, 7).", options: ["1/2", "2", "3", "4"], ans: 1, sol: "m = (y₂ - y₁) / (x₂ - x₁) = (7 - (-1)) / (6 - 2) = 8 / 4 = 2." },
+      { q: "Find the median of the composite numbers less than 18.", options: ["9", "10", "11", "12"], ans: 1, sol: "Composite numbers < 18: 4, 6, 8, 9, 10, 12, 14, 15, 16 (9 numbers).\nMiddle (5th) value = 10." },
+      { q: "Two angles of a triangle add up to 137°. Find the third angle.", options: ["33°", "43°", "47°", "53°"], ans: 1, sol: "Angles in a triangle sum to 180°.\nThird angle = 180° - 137° = 43°." },
+      { q: "The bearing of Lapaz from Achimota is 128°. Find the bearing of A from Lapaz.", options: ["052°", "128°", "232°", "308°"], ans: 3, sol: "Back bearing: since 128° < 180°, add 180°.\n128° + 180° = 308°." },
+      { q: "Expand and simplify (m - 3)(m + 5).", options: ["m² + 2m - 15", "m² + 8m - 15", "m² - 2m - 15", "m² + 2m + 15"], ans: 0, sol: "m(m + 5) - 3(m + 5) = m² + 5m - 3m - 15 = m² + 2m - 15." },
+      { q: "A bus travels at 72 km/h for 2.5 hours. Find the distance covered.", options: ["144 km", "160 km", "180 km", "216 km"], ans: 2, sol: "Distance = Speed × Time = 72 × 2.5 = 144 + 36 = 180 km." },
+      { q: "A cyclist travels 20 km north and then 15 km east. How far is the cyclist from the starting point?", options: ["25 km", "30 km", "35 km", "40 km"], ans: 0, sol: "By Pythagoras' theorem: d = √(20² + 15²) = √(400 + 225) = √625 = 25 km." },
+      { q: "A circle has a diameter of 35 cm. Find its circumference. [Take π = 22/7]", options: ["55 cm", "70 cm", "110 cm", "220 cm"], ans: 2, sol: "C = πd = (22/7) × 35 = 22 × 5 = 110 cm." },
+      { q: "A point (-4, 3) is rotated 90° anticlockwise about the origin. Find its image.", options: ["(-3, -4)", "(3, 4)", "(-3, 4)", "(4, -3)"], ans: 0, sol: "90° anticlockwise rule: (x, y) → (-y, x).\n(-4, 3) → (-3, -4)." },
+      { q: "The mean of 6, 8, h, 10 and 11 is 9. Find h.", options: ["8", "9", "10", "11"], ans: 2, sol: "(6 + 8 + h + 10 + 11) / 5 = 9\n35 + h = 45\nh = 45 - 35 = 10." },
+      { q: "Express 9.8 litres in millilitres.", options: ["98 ml", "980 ml", "9,800 ml", "98,000 ml"], ans: 2, sol: "1 litre = 1,000 ml.\n9.8 × 1,000 = 9,800 ml." },
+      { q: "Two fair dice are thrown. Find the probability that their sum is 7.", options: ["1/12", "1/9", "1/6", "1/4"], ans: 2, sol: "Total outcomes = 36.\nPairs summing to 7: (1,6), (2,5), (3,4), (4,3), (5,2), (6,1) = 6 pairs.\nProbability = 6/36 = 1/6." },
+      { q: "Round 684.756 to the nearest tenth.", options: ["684.7", "684.8", "684.75", "685.0"], ans: 1, sol: "Tenths digit is 7; next digit is 5 (round up).\n684.756 → 684.8." },
+      { q: "Write nine million, seventy thousand and six in figures.", options: ["9,700,006", "9,070,006", "9,007,006", "9,070,600"], ans: 1, sol: "9,000,000 + 70,000 + 6 = 9,070,006." },
+      { q: "A worker earns GH₵145 each day. How much will the worker earn in 12 days?", options: ["GH₵1,620", "GH₵1,680", "GH₵1,740", "GH₵1,780"], ans: 2, sol: "145 × 12 = (145 × 10) + (145 × 2) = 1,450 + 290 = GH₵1,740." },
+      { q: "Each exterior angle of a regular polygon is 20°. How many sides does the polygon have?", options: ["16", "18", "20", "24"], ans: 1, sol: "n = 360° / 20° = 18 sides." },
+      { q: "A regular octagon has side length 9.5 cm. Find its perimeter.", options: ["66.5 cm", "72.0 cm", "76.0 cm", "85.5 cm"], ans: 2, sol: "Octagon has 8 sides.\nPerimeter = 8 × 9.5 = 76.0 cm." },
+      { q: "Use the isosceles triangle to find h.", svg: `<svg width="220" height="150" viewBox="0 0 240 170" xmlns="http://www.w3.org/2000/svg"><polygon points="120,20 40,140 200,140" fill="none" stroke="#0f172a" stroke-width="2.5"/><line x1="120" y1="20" x2="120" y2="140" stroke="#0f172a" stroke-width="1.8" stroke-dasharray="5,4"/><rect x="120" y="128" width="12" height="12" fill="none" stroke="#0f172a" stroke-width="1.5"/><text x="56" y="78" font-size="14" font-weight="600" fill="#0f172a">13 cm</text><text x="155" y="78" font-size="14" font-weight="600" fill="#0f172a">13 cm</text><text x="126" y="92" font-size="14" font-weight="700" fill="#1d4ed8">h</text><text x="102" y="160" font-size="14" font-weight="600" fill="#0f172a">10 cm</text></svg>`, options: ["10 cm", "12 cm", "13 cm", "15 cm"], ans: 1, sol: "Half base = 10 ÷ 2 = 5 cm.\nh = √(13² - 5²) = √(169 - 25) = √144 = 12 cm." },
+      { q: "Round GH₵86,549 to the nearest thousand cedis.", options: ["GH₵86,000", "GH₵86,500", "GH₵87,000", "GH₵90,000"], ans: 2, sol: "Thousands digit is 6; hundreds digit is 5 (round up).\nGH₵87,000." },
+      { q: "The area of a square tile is 144 cm². Find its perimeter.", options: ["24 cm", "36 cm", "48 cm", "56 cm"], ans: 2, sol: "Side = √144 = 12 cm.\nPerimeter = 4 × 12 = 48 cm." },
+      { q: "A cube has side 7 cm. Find its total surface area.", options: ["196 cm²", "294 cm²", "343 cm²", "392 cm²"], ans: 1, sol: "TSA = 6s² = 6 × 7² = 6 × 49 = 294 cm²." },
+      { q: "Use the diagram to find y.", svg: `<svg width="240" height="135" viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><polygon points="45,25 225,75 45,125" fill="none" stroke="#0f172a" stroke-width="2.5"/><text x="30" y="25" font-size="14" font-weight="700" fill="#0f172a">A</text><text x="232" y="80" font-size="14" font-weight="700" fill="#0f172a">B</text><text x="30" y="132" font-size="14" font-weight="700" fill="#0f172a">C</text><text x="53" y="52" font-size="14" font-weight="700" fill="#1d4ed8">y°</text><text x="53" y="110" font-size="14" font-weight="600" fill="#0f172a">52°</text><text x="165" y="79" font-size="14" font-weight="600" fill="#0f172a">31°</text></svg>`, options: ["83°", "97°", "101°", "128°"], ans: 1, sol: "y° + 52° + 31° = 180°\ny = 180° - 83° = 97°." },
+      { q: "Given 4p : 12 = 5 : 15, find p.", options: ["1", "2", "3", "4"], ans: 0, sol: "4p / 12 = 5 / 15\np / 3 = 1 / 3 → p = 1." },
+      { q: "Translate \"five times a number decreased by 12\" into an algebraic expression.", options: ["5x + 12", "5x - 12", "12x - 5", "5 - 12x"], ans: 1, sol: "5 times x minus 12 = 5x - 12." },
+      { q: "A fair die is tossed once. Find the probability of obtaining an odd prime number.", options: ["1/6", "1/3", "1/2", "2/3"], ans: 1, sol: "Odd primes on a die: {3, 5} (2 outcomes out of 6).\nProbability = 2/6 = 1/3." },
+      { q: "A learner scores 54 out of 60 marks. Express the score as a percentage.", options: ["80%", "85%", "90%", "95%"], ans: 2, sol: "(54 / 60) × 100% = (9/10) × 100% = 90%." },
+      { q: "Find the equation of a line with gradient 2 and y-intercept -5.", options: ["y = 2x - 5", "y = -2x - 5", "y = 5x + 2", "y = 2x + 5"], ans: 0, sol: "y = mx + c → y = 2x - 5." },
+      { q: "Solve the inequality 3(2x - 1) - 4x > 5.", options: ["x > 4", "x < 4", "x > 1", "x < 1"], ans: 0, sol: "6x - 3 - 4x > 5\n2x > 8\nx > 4." },
+      { q: "The number line represents which inequality?", svg: `<svg width="300" height="70" viewBox="0 0 320 75" xmlns="http://www.w3.org/2000/svg"><line x1="20" y1="45" x2="300" y2="45" stroke="#0f172a" stroke-width="2"/><polygon points="15,45 25,40 25,50" fill="#0f172a"/><polygon points="305,45 295,40 295,50" fill="#0f172a"/><g font-size="12" text-anchor="middle" fill="#0f172a"><line x1="40" y1="40" x2="40" y2="50" stroke="#0f172a"/><text x="40" y="65">-4</text><line x1="70" y1="40" x2="70" y2="50" stroke="#0f172a"/><text x="70" y="65">-3</text><line x1="100" y1="40" x2="100" y2="50" stroke="#0f172a"/><text x="100" y="65">-2</text><line x1="130" y1="40" x2="130" y2="50" stroke="#0f172a"/><text x="130" y="65">-1</text><line x1="160" y1="40" x2="160" y2="50" stroke="#0f172a"/><text x="160" y="65">0</text><line x1="190" y1="40" x2="190" y2="50" stroke="#0f172a"/><text x="190" y="65">1</text><line x1="220" y1="40" x2="220" y2="50" stroke="#0f172a"/><text x="220" y="65">2</text><line x1="250" y1="40" x2="250" y2="50" stroke="#0f172a"/><text x="250" y="65">3</text><line x1="280" y1="40" x2="280" y2="50" stroke="#0f172a"/><text x="280" y="65">4</text></g><line x1="214" y1="22" x2="25" y2="22" stroke="#1d4ed8" stroke-width="3"/><polygon points="18,22 30,16 30,28" fill="#1d4ed8"/><circle cx="220" cy="22" r="6" fill="#ffffff" stroke="#1d4ed8" stroke-width="3"/></svg>`, options: ["x < 2", "x ≤ 2", "x > 2", "x ≥ 2"], ans: 0, sol: "Open circle at 2 (excluded) and arrow pointing left (< 2) → x < 2." },
+      { q: "Round 7,846,391 to the nearest ten thousand.", options: ["7,840,000", "7,846,000", "7,850,000", "7,900,000"], ans: 2, sol: "Ten-thousands digit is 4; thousands digit is 6 (round up) → 7,850,000." },
+      { q: "A triangle has an area of 72 cm² and a perpendicular height of 12 cm. Find its base.", options: ["6 cm", "10 cm", "12 cm", "14 cm"], ans: 2, sol: "72 = (1/2) × b × 12 → 72 = 6b → b = 12 cm." },
+      { q: "A line has equation y = -3x + 8. Which ordered pair lies on the line?", options: ["(2, 2)", "(1, 6)", "(0, 3)", "(3, 2)"], ans: 0, sol: "Test (2, 2): y = -3(2) + 8 = -6 + 8 = 2. Matches!" },
+      { q: "Under the mapping x → 3x - 4, find the image of 9.", options: ["19", "21", "23", "27"], ans: 2, sol: "3(9) - 4 = 27 - 4 = 23." },
+      { q: "Find the LCM of 12, 15 and 20.", options: ["40", "50", "60", "120"], ans: 2, sol: "12 = 2²×3, 15 = 3×5, 20 = 2²×5.\nLCM = 2² × 3 × 5 = 60." }
+    ];
+
+    function getDefaultState() {
+      return {
+        classes: ["JHS 3A", "JHS 3B"],
+        users: [
+          { id: "u1", name: "Akosua Mensah", role: "student", code: "JHS 3A", active: true },
+          { id: "t1", name: "Mr. Samuel Tetteh", role: "teacher", code: "TCH-001", password: "", active: true },
+          { id: "t2", name: "Ms. Linda Owusu", role: "teacher", code: "TCH-002", password: "", active: true }
+        ],
+        questions: JSON.parse(JSON.stringify(defaultQuestions)),
+        submissions: [],
+        announcements: [
+          { id: "n1", text: "Welcome to GBAT Nov 2026 Mock Prep! Review every worked solution whenever you miss a question.", author: "Mr. Samuel Tetteh", date: "17/11/2026" }
+        ],
+        settings: {
+          quizOpen: true,
+          examMinutes: 45,
+          teacherPass: "teacher123",
+          adminPass: "admin123"
+        },
+        logs: [
+          { time: new Date().toLocaleString(), actor: "Principal Admin", action: "Initialized Cloud GBAT Portal" }
+        ]
+      };
+    }
+
+    let state = getDefaultState();
+    let session = null; // { id, role, name, code }
+    let activeQuiz = null;
+    let reviewSubmission = null;
+    let showMissedOnly = false;
+
+    function saveState() {
+      syncBadge.textContent = "Saving...";
+      set(stateRef, state)
+        .then(() => { syncBadge.textContent = "● Cloud Synced"; })
+        .catch(err => {
+          console.error("Cloud save failed:", err);
+          syncBadge.textContent = "⚠ Sync Error";
+        });
+    }
+
+    function addLog(actor, action) {
+      state.logs.unshift({ time: new Date().toLocaleString(), actor, action });
+      if (state.logs.length > 60) state.logs.pop();
+      saveState();
+    }
+
+    onValue(stateRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        state = {
+          classes: Array.isArray(data.classes) && data.classes.length ? data.classes : ["JHS 3A", "JHS 3B"],
+          users: data.users || [],
+          questions: data.questions || defaultQuestions,
+          submissions: data.submissions || [],
+          announcements: data.announcements || [],
+          settings: {
+            quizOpen: true,
+            examMinutes: 45,
+            teacherPass: "teacher123",
+            adminPass: "admin123",
+            ...(data.settings || {})
+          },
+          logs: data.logs || []
+        };
+        syncBadge.textContent = "● Cloud Synced";
+      } else {
+        state = getDefaultState();
+        saveState();
+      }
+      populateDropdowns();
+      if (session && !activeQuiz) {
+        if (session.role === "student" && !document.getElementById("studentDashboard").classList.contains("hidden")) renderStudentDashboard();
+        if (session.role === "teacher" && !document.getElementById("teacherDashboard").classList.contains("hidden")) renderTeacherDashboard();
+        if (session.role === "admin" && !document.getElementById("adminDashboard").classList.contains("hidden")) renderAdminDashboard();
+      }
+    }, (error) => {
+      console.error("Firebase connection error:", error);
+      syncBadge.textContent = "⚠ Offline / Check Rules";
+    });
+
+    const screens = ["loginScreen", "studentDashboard", "quizScreen", "resultScreen", "teacherDashboard", "adminDashboard"];
+    function showScreen(id) {
+      screens.forEach(s => document.getElementById(s).classList.toggle("hidden", s !== id));
+    }
+
+    /* ---------------- DROPDOWNS & ROLE SWITCHING ---------------- */
+    function populateDropdowns() {
+      // Teacher login selector
+      const tSel = document.getElementById("teacherSelect");
+      const curT = tSel.value;
+      tSel.innerHTML = "";
+      state.users.filter(u => u.role === "teacher").forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.textContent = `${t.name} (${t.code})`;
+        tSel.appendChild(opt);
+      });
+      if (curT) tSel.value = curT;
+
+      // Student login class selector
+      const stuCls = document.getElementById("stuClassSelect");
+      const curStuCls = stuCls.value;
+      stuCls.innerHTML = "";
+      if (!state.classes.length) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "No classes available (Contact Admin)";
+        stuCls.appendChild(opt);
+      } else {
+        state.classes.forEach(cls => {
+          const opt = document.createElement("option");
+          opt.value = cls;
+          opt.textContent = cls;
+          stuCls.appendChild(opt);
+        });
+        if (curStuCls && state.classes.includes(curStuCls)) stuCls.value = curStuCls;
+      }
+
+      // Admin add-user class selector
+      const admCls = document.getElementById("aNewClassSelect");
+      const curAdmCls = admCls.value;
+      admCls.innerHTML = "";
+      state.classes.forEach(cls => {
+        const opt = document.createElement("option");
+        opt.value = cls;
+        opt.textContent = cls;
+        admCls.appendChild(opt);
+      });
+      if (curAdmCls && state.classes.includes(curAdmCls)) admCls.value = curAdmCls;
+
+      // Teacher submission class filter
+      const tFilter = document.getElementById("tClassFilter");
+      const curFilter = tFilter.value;
+      tFilter.innerHTML = '<option value="">All Classes</option>';
+      state.classes.forEach(cls => {
+        const opt = document.createElement("option");
+        opt.value = cls;
+        opt.textContent = cls;
+        tFilter.appendChild(opt);
+      });
+      if (curFilter) tFilter.value = curFilter;
+    }
+
+    document.querySelectorAll(".role-tab").forEach(tab => {
+      tab.onclick = () => {
+        document.querySelectorAll(".role-tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        const r = tab.dataset.role;
+        document.getElementById("loginStudentForm").classList.toggle("hidden", r !== "student");
+        document.getElementById("loginTeacherForm").classList.toggle("hidden", r !== "teacher");
+        document.getElementById("loginAdminForm").classList.toggle("hidden", r !== "admin");
+        document.getElementById("loginError").textContent = "";
+      };
+    });
+
+    function setNavSession() {
+      document.getElementById("navRole").textContent = session.role.toUpperCase();
+      document.getElementById("navUser").textContent = session.code ? `${session.name} (${session.code})` : session.name;
+      document.getElementById("navRole").classList.remove("hidden");
+      document.getElementById("navUser").classList.remove("hidden");
+      document.getElementById("logoutBtn").classList.remove("hidden");
+    }
+
+    document.getElementById("stuLoginBtn").onclick = () => {
+      const name = document.getElementById("stuNameInput").value.trim();
+      const studentClass = document.getElementById("stuClassSelect").value;
+      if (!name) {
+        document.getElementById("loginError").textContent = "Please enter your full name.";
+        return;
+      }
+      if (!studentClass) {
+        document.getElementById("loginError").textContent = "Please select your class (or ask Admin to create classes first).";
+        return;
+      }
+      const existing = state.users.find(u => u.role === "student" && u.name.toLowerCase() === name.toLowerCase());
+      if (existing && !existing.active) {
+        document.getElementById("loginError").textContent = "This student account is currently suspended by Admin.";
+        return;
+      }
+      let userId;
+      if (!existing) {
+        userId = "u" + Date.now();
+        state.users.push({ id: userId, name, role: "student", code: studentClass, active: true });
+      } else {
+        userId = existing.id;
+        existing.code = studentClass;
+      }
+      session = { id: userId, role: "student", name, code: studentClass };
+      addLog(name, `Logged into Student Dashboard (${studentClass})`);
+      setNavSession();
+      renderStudentDashboard();
+      showScreen("studentDashboard");
+    };
+
+    document.getElementById("teacherLoginBtn").onclick = () => {
+      const pass = document.getElementById("teacherPassInput").value;
+      const tid = document.getElementById("teacherSelect").value;
+      const teacher = state.users.find(u => u.id === tid);
+      if (!teacher) {
+        document.getElementById("loginError").textContent = "Please select a valid teacher account.";
+        return;
+      }
+      if (!teacher.active) {
+        document.getElementById("loginError").textContent = "This teacher account is suspended.";
+        return;
+      }
+      const expectedPass = teacher.password ? teacher.password : (state.settings.teacherPass || "teacher123");
+      if (pass !== expectedPass) {
+        document.getElementById("loginError").textContent = "Invalid teacher password.";
+        return;
+      }
+      document.getElementById("teacherPassInput").value = "";
+      session = { id: teacher.id, role: "teacher", name: teacher.name, code: teacher.code };
+      addLog(teacher.name, "Logged into Teacher Dashboard");
+      setNavSession();
+      renderTeacherDashboard();
+      showScreen("teacherDashboard");
+    };
+
+    document.getElementById("adminLoginBtn").onclick = () => {
+      const pass = document.getElementById("adminPassInput").value;
+      const expectedAdminPass = state.settings.adminPass || "admin123";
+      if (pass !== expectedAdminPass) {
+        document.getElementById("loginError").textContent = "Invalid admin password.";
+        return;
+      }
+      document.getElementById("adminPassInput").value = "";
+      session = { id: "admin", role: "admin", name: "Principal Admin", code: "ADM-01" };
+      addLog("Principal Admin", "Logged into Admin Dashboard");
+      setNavSession();
+      renderAdminDashboard();
+      showScreen("adminDashboard");
+    };
+
+    document.getElementById("logoutBtn").onclick = () => {
+      if (activeQuiz && activeQuiz.timer) clearInterval(activeQuiz.timer);
+      session = null;
+      activeQuiz = null;
+      ["navRole", "navUser", "navTimer", "logoutBtn"].forEach(id => document.getElementById(id).classList.add("hidden"));
+      document.getElementById("loginError").textContent = "";
+      populateDropdowns();
+      showScreen("loginScreen");
+    };
+
+    /* ---------------- STUDENT DASHBOARD ---------------- */
+    function renderStudentDashboard() {
+      document.getElementById("stuWelcome").textContent = `Welcome, ${session.name}`;
+      document.getElementById("stuMeta").textContent = `Class: ${session.code} • GBAT Mathematics Mock`;
+
+      const mine = state.submissions.filter(s => s.studentName.toLowerCase() === session.name.toLowerCase());
+      const avg = mine.length ? Math.round(mine.reduce((a, b) => a + b.pct, 0) / mine.length) : 0;
+      const best = mine.length ? Math.max(...mine.map(s => s.pct)) : 0;
+
+      document.getElementById("stuKpiAttempts").textContent = mine.length;
+      document.getElementById("stuKpiAvg").textContent = `${avg}%`;
+      document.getElementById("stuKpiBest").textContent = `${best}%`;
+      document.getElementById("stuKpiQs").textContent = state.questions.length;
+
+      const annBox = document.getElementById("stuAnnouncements");
+      annBox.innerHTML = "";
+      if (!state.announcements.length) {
+        annBox.textContent = "No announcements yet.";
+      } else {
+        state.announcements.forEach(a => {
+          const d = document.createElement("div");
+          d.className = "notice";
+          const p = document.createElement("div");
+          p.textContent = a.text;
+          const m = document.createElement("div");
+          m.className = "notice-meta";
+          m.textContent = `Posted by ${a.author} • ${a.date}`;
+          d.append(p, m);
+          annBox.appendChild(d);
+        });
+      }
+
+      document.getElementById("stuQuizDesc").textContent =
+        `Total Questions: ${state.questions.length} | Exam Duration: ${state.settings.examMinutes} minutes. Any wrong choice reveals a full step-by-step worked solution.`;
+      document.getElementById("stuQuizControls").classList.toggle("hidden", !state.settings.quizOpen);
+      document.getElementById("stuQuizClosedMsg").classList.toggle("hidden", state.settings.quizOpen);
+
+      const tbody = document.getElementById("stuHistoryBody");
+      tbody.innerHTML = "";
+      if (!mine.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 6;
+        td.textContent = "You have not completed any attempt yet. Start the quiz above!";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      } else {
+        mine.slice().reverse().forEach(sub => {
+          const tr = document.createElement("tr");
+          [sub.date, sub.studentClass || sub.indexNumber || "-", sub.mode, `${sub.score} / ${sub.total}`, `${sub.pct}%`].forEach(val => {
+            const td = document.createElement("td");
+            td.textContent = val;
+            tr.appendChild(td);
+          });
+          const tdAct = document.createElement("td");
+          const btn = document.createElement("button");
+          btn.className = "btn btn-outline btn-sm";
+          btn.textContent = "Review Solutions";
+          btn.onclick = () => openResultView(sub);
+          tdAct.appendChild(btn);
+          tr.appendChild(tdAct);
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    document.getElementById("startPracticeBtn").onclick = () => startQuiz("Practice");
+    document.getElementById("startTimedBtn").onclick = () => startQuiz("Exam");
+
+    /* ---------------- QUIZ ENGINE ---------------- */
+    function startQuiz(mode) {
+      activeQuiz = {
+        mode,
+        current: 0,
+        answers: new Array(state.questions.length).fill(null),
+        secondsLeft: state.settings.examMinutes * 60,
+        timer: null
+      };
+      if (mode === "Exam") {
+        const navTimer = document.getElementById("navTimer");
+        navTimer.classList.remove("hidden");
+        const tick = () => {
+          const m = String(Math.floor(activeQuiz.secondsLeft / 60)).padStart(2, "0");
+          const s = String(activeQuiz.secondsLeft % 60).padStart(2, "0");
+          navTimer.textContent = `⏱ ${m}:${s}`;
+        };
+        tick();
+        activeQuiz.timer = setInterval(() => {
+          activeQuiz.secondsLeft--;
+          tick();
+          if (activeQuiz.secondsLeft <= 0) submitQuiz();
+        }, 1000);
+      }
+      showScreen("quizScreen");
+      renderQuizQuestion();
+    }
+
+    function renderQuizQuestion() {
+      const qs = state.questions;
+      const idx = activeQuiz.current;
+      const item = qs[idx];
+      const chosen = activeQuiz.answers[idx];
+      const answered = activeQuiz.answers.filter(a => a !== null).length;
+      const correct = activeQuiz.answers.filter((a, i) => a === qs[i].ans).length;
+
+      document.getElementById("progressBar").style.width = `${(answered / qs.length) * 100}%`;
+      document.getElementById("qBadge").textContent = `Question ${idx + 1} of ${qs.length}`;
+      document.getElementById("answeredBadge").textContent = `${answered} of ${qs.length} answered`;
+      document.getElementById("sideScore").textContent = `${correct} / ${answered}`;
+      document.getElementById("sideRemain").textContent = qs.length - answered;
+      document.getElementById("qText").textContent = item.q;
+
+      const diag = document.getElementById("qDiagram");
+      if (item.svg) {
+        diag.classList.remove("hidden");
+        diag.innerHTML = item.svg;
+      } else {
+        diag.classList.add("hidden");
+        diag.innerHTML = "";
+      }
+
+      const box = document.getElementById("optionsBox");
+      box.innerHTML = "";
+      item.options.forEach((opt, oIdx) => {
+        const btn = document.createElement("button");
+        btn.className = "opt-btn";
+        const ls = document.createElement("span");
+        ls.className = "opt-letter";
+        ls.textContent = letters[oIdx];
+        const ts = document.createElement("span");
+        ts.textContent = opt;
+        btn.append(ls, ts);
+
+        if (chosen !== null) {
+          btn.disabled = true;
+          if (oIdx === item.ans) btn.classList.add("correct");
+          if (oIdx === chosen && chosen !== item.ans) btn.classList.add("wrong");
+        }
+        btn.onclick = () => {
+          if (activeQuiz.answers[idx] !== null) return;
+          activeQuiz.answers[idx] = oIdx;
+          renderQuizQuestion();
+        };
+        box.appendChild(btn);
+      });
+
+      const fb = document.getElementById("feedbackBox");
+      fb.innerHTML = "";
+      if (chosen !== null) {
+        const ok = chosen === item.ans;
+        fb.className = `feedback show ${ok ? "correct" : "wrong"}`;
+        const title = document.createElement("div");
+        title.style.fontWeight = "700";
+        if (ok) {
+          title.textContent = "Correct! Well done.";
+          fb.appendChild(title);
+        } else {
+          title.textContent = `Incorrect. You chose ${letters[chosen]} (${item.options[chosen]}). Correct answer: ${letters[item.ans]} (${item.options[item.ans]}).`;
+          const sol = document.createElement("div");
+          sol.className = "solution-box";
+          const st = document.createElement("strong");
+          st.textContent = "Step-by-Step Worked Solution:\n";
+          sol.append(st, document.createTextNode(item.sol));
+          fb.append(title, sol);
+        }
+      } else {
+        fb.className = "feedback";
+      }
+
+      const grid = document.getElementById("paletteGrid");
+      grid.innerHTML = "";
+      qs.forEach((q, qIdx) => {
+        const dot = document.createElement("button");
+        dot.className = "p-dot";
+        dot.textContent = qIdx + 1;
+        if (qIdx === idx) dot.classList.add("active");
+        if (activeQuiz.answers[qIdx] !== null) {
+          dot.classList.add(activeQuiz.answers[qIdx] === q.ans ? "p-correct" : "p-wrong");
+        }
+        dot.onclick = () => { activeQuiz.current = qIdx; renderQuizQuestion(); };
+        grid.appendChild(dot);
+      });
+
+      document.getElementById("prevBtn").disabled = idx === 0;
+      document.getElementById("nextBtn").textContent = idx === qs.length - 1 ? "Submit & Finish →" : "Next Question →";
+    }
+
+    document.getElementById("prevBtn").onclick = () => { if (activeQuiz.current > 0) { activeQuiz.current--; renderQuizQuestion(); } };
+    document.getElementById("nextBtn").onclick = () => {
+      if (activeQuiz.current < state.questions.length - 1) { activeQuiz.current++; renderQuizQuestion(); }
+      else submitQuiz();
+    };
+    document.getElementById("finishEarlyBtn").onclick = submitQuiz;
+
+    function submitQuiz() {
+      if (activeQuiz.timer) clearInterval(activeQuiz.timer);
+      document.getElementById("navTimer").classList.add("hidden");
+
+      const total = state.questions.length;
+      const score = activeQuiz.answers.filter((a, i) => a === state.questions[i].ans).length;
+      const pct = Math.round((score / total) * 100);
+      const sub = {
+        id: "sub_" + Date.now(),
+        studentName: session.name,
+        studentClass: session.code,
+        mode: activeQuiz.mode,
+        score,
+        total,
+        pct,
+        date: new Date().toLocaleString(),
+        answers: activeQuiz.answers.slice()
+      };
+      state.submissions.push(sub);
+      addLog(session.name, `Completed ${activeQuiz.mode} Mode quiz (${session.code} • ${score}/${total} • ${pct}%)`);
+      activeQuiz = null;
+      openResultView(sub);
+    }
+
+    function openResultView(sub) {
+      reviewSubmission = sub;
+      showMissedOnly = false;
+      document.getElementById("resMissedBtn").textContent = "Show Missed Only";
+      const clsLabel = sub.studentClass || sub.indexNumber || "";
+      document.getElementById("resStudentTitle").textContent = `${sub.studentName} (${clsLabel}) — ${sub.mode} Mode`;
+      document.getElementById("resScoreBig").textContent = `${sub.score} / ${sub.total} (${sub.pct}%)`;
+      document.getElementById("resRemark").textContent =
+        sub.pct >= 80 ? "Excellent mastery! Review any missed questions below." :
+        sub.pct >= 50 ? "Good effort! Study the worked solutions for the questions you missed." :
+        "Keep practicing! Carefully review every worked solution below.";
+      renderResultReview();
+      showScreen("resultScreen");
+    }
+
+    function renderResultReview() {
+      const list = document.getElementById("resReviewList");
+      list.innerHTML = "";
+      state.questions.forEach((item, idx) => {
+        const chosen = reviewSubmission.answers ? reviewSubmission.answers[idx] : null;
+        const ok = chosen === item.ans;
+        if (showMissedOnly && ok) return;
+
+        const div = document.createElement("div");
+        div.className = `review-item ${ok ? "passed" : "missed"}`;
+        const qt = document.createElement("div");
+        qt.style.fontWeight = "700";
+        qt.textContent = `Q${idx + 1}. ${item.q}`;
+        const st = document.createElement("div");
+        st.style.fontSize = "0.9rem";
+        st.style.margin = "6px 0";
+        const chosenTxt = chosen === null || chosen === undefined ? "Unanswered" : `${letters[chosen]} (${item.options[chosen]})`;
+        st.textContent = `Selected: ${chosenTxt} | Correct: ${letters[item.ans]} (${item.options[item.ans]})`;
+        div.append(qt, st);
+
+        if (!ok) {
+          const sb = document.createElement("div");
+          sb.className = "solution-box";
+          const b = document.createElement("strong");
+          b.textContent = "Step-by-Step Solution:\n";
+          sb.append(b, document.createTextNode(item.sol));
+          div.appendChild(sb);
+        }
+        list.appendChild(div);
+      });
+    }
+
+    document.getElementById("resMissedBtn").onclick = () => {
+      showMissedOnly = !showMissedOnly;
+      document.getElementById("resMissedBtn").textContent = showMissedOnly ? "Show All Questions" : "Show Missed Only";
+      renderResultReview();
+    };
+    document.getElementById("resBackBtn").onclick = () => {
+      if (session.role === "teacher") { renderTeacherDashboard(); showScreen("teacherDashboard"); }
+      else { renderStudentDashboard(); showScreen("studentDashboard"); }
+    };
+
+    /* ---------------- TEACHER DASHBOARD ---------------- */
+    document.querySelectorAll("#teacherTabs .sub-tab").forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll("#teacherTabs .sub-tab").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        ["tSubs", "tAnalytics", "tQuestions", "tNotices", "tSecurity"].forEach(id =>
+          document.getElementById(id).classList.toggle("hidden", id !== btn.dataset.tab)
+        );
+      };
+    });
+
+    function renderTeacherDashboard() {
+      document.getElementById("teacherMeta").textContent = `Signed in as ${session.name} (${session.code})`;
+      const subs = state.submissions;
+      const avg = subs.length ? Math.round(subs.reduce((a, b) => a + b.pct, 0) / subs.length) : 0;
+      const high = subs.length ? Math.max(...subs.map(s => s.pct)) : 0;
+
+      let hardest = "-", lowestAcc = 101;
+      const analyticsBody = document.getElementById("tAnalyticsBody");
+      analyticsBody.innerHTML = "";
+      state.questions.forEach((q, idx) => {
+        let attempts = 0, right = 0;
+        subs.forEach(s => {
+          if (s.answers && s.answers[idx] !== null && s.answers[idx] !== undefined) {
+            attempts++;
+            if (s.answers[idx] === q.ans) right++;
+          }
+        });
+        const acc = attempts ? Math.round((right / attempts) * 100) : 0;
+        if (attempts && acc < lowestAcc) { lowestAcc = acc; hardest = `Q${idx + 1} (${acc}%)`; }
+
+        const tr = document.createElement("tr");
+        [idx + 1, q.q.slice(0, 65) + (q.q.length > 65 ? "..." : ""), attempts, right].forEach(v => {
+          const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
+        });
+        const tdAcc = document.createElement("td");
+        const badge = document.createElement("span");
+        badge.className = `badge ${acc >= 70 ? "b-green" : acc >= 45 ? "b-warn" : "b-red"}`;
+        badge.textContent = `${acc}%`;
+        tdAcc.appendChild(badge);
+        tr.appendChild(tdAcc);
+        analyticsBody.appendChild(tr);
+      });
+
+      document.getElementById("tKpiSubs").textContent = subs.length;
+      document.getElementById("tKpiAvg").textContent = `${avg}%`;
+      document.getElementById("tKpiHigh").textContent = `${high}%`;
+      document.getElementById("tKpiHard").textContent = hardest;
+
+      renderTeacherSubmissions();
+      renderTeacherQuestions();
+      renderTeacherNotices();
+    }
+
+    function renderTeacherSubmissions() {
+      const q = document.getElementById("tSearchInput").value.trim().toLowerCase();
+      const clsFilter = document.getElementById("tClassFilter").value;
+      const tbody = document.getElementById("tSubsBody");
+      tbody.innerHTML = "";
+      state.submissions.slice().reverse().filter(s => {
+        const sClass = s.studentClass || s.indexNumber || "";
+        const matchesClass = !clsFilter || sClass === clsFilter;
+        const matchesText = s.studentName.toLowerCase().includes(q) || sClass.toLowerCase().includes(q);
+        return matchesClass && matchesText;
+      }).forEach(sub => {
+        const tr = document.createElement("tr");
+        const sClass = sub.studentClass || sub.indexNumber || "-";
+        [sub.studentName, sClass, sub.mode, `${sub.score}/${sub.total}`, `${sub.pct}%`, sub.date].forEach(v => {
+          const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
+        });
+        const tdAct = document.createElement("td");
+        const btn = document.createElement("button");
+        btn.className = "btn btn-outline btn-sm";
+        btn.textContent = "Inspect";
+        btn.onclick = () => openResultView(sub);
+        tdAct.appendChild(btn);
+        tr.appendChild(tdAct);
+        tbody.appendChild(tr);
+      });
+    }
+    document.getElementById("tSearchInput").oninput = renderTeacherSubmissions;
+    document.getElementById("tClassFilter").onchange = renderTeacherSubmissions;
+
+    function renderTeacherQuestions() {
+      document.getElementById("qBankCount").textContent = state.questions.length;
+      const tbody = document.getElementById("tQuestionsBody");
+      tbody.innerHTML = "";
+      state.questions.forEach((q, idx) => {
+        const tr = document.createElement("tr");
+        const td1 = document.createElement("td"); td1.textContent = idx + 1;
+        const td2 = document.createElement("td"); td2.textContent = q.q;
+        const td3 = document.createElement("td"); td3.textContent = `${letters[q.ans]} (${q.options[q.ans]})`;
+        const td4 = document.createElement("td");
+        const del = document.createElement("button");
+        del.className = "btn btn-danger btn-sm";
+        del.textContent = "Delete";
+        del.onclick = () => {
+          if (state.questions.length <= 1) return alert("At least 1 question must remain.");
+          state.questions.splice(idx, 1);
+          addLog(session.name, `Removed question #${idx + 1} from bank`);
+          renderTeacherDashboard();
+        };
+        td4.appendChild(del);
+        tr.append(td1, td2, td3, td4);
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById("addQuestionBtn").onclick = () => {
+      const q = document.getElementById("newQText").value.trim();
+      const options = ["newOptA", "newOptB", "newOptC", "newOptD"].map(id => document.getElementById(id).value.trim());
+      const ans = Number(document.getElementById("newQAns").value);
+      const sol = document.getElementById("newQSol").value.trim();
+      if (!q || options.some(o => !o) || !sol) {
+        alert("Please fill in the question, all 4 options, and the worked solution.");
+        return;
+      }
+      state.questions.push({ q, options, ans, sol });
+      addLog(session.name, "Added a new question to the Mathematics bank");
+      ["newQText", "newOptA", "newOptB", "newOptC", "newOptD", "newQSol"].forEach(id => document.getElementById(id).value = "");
+      renderTeacherDashboard();
+    };
+
+    function renderTeacherNotices() {
+      const box = document.getElementById("tNoticesList");
+      box.innerHTML = "";
+      state.announcements.forEach((a, idx) => {
+        const wrap = document.createElement("div");
+        wrap.className = "notice";
+        wrap.style.display = "flex";
+        wrap.style.justifyContent = "space-between";
+        wrap.style.alignItems = "center";
+        wrap.style.gap = "10px";
+        const left = document.createElement("div");
+        const t = document.createElement("div"); t.textContent = a.text;
+        const m = document.createElement("div"); m.className = "notice-meta"; m.textContent = `${a.author} • ${a.date}`;
+        left.append(t, m);
+        const del = document.createElement("button");
+        del.className = "btn btn-outline btn-sm";
+        del.textContent = "Remove";
+        del.onclick = () => { state.announcements.splice(idx, 1); saveState(); renderTeacherNotices(); };
+        wrap.append(left, del);
+        box.appendChild(wrap);
+      });
+    }
+
+    document.getElementById("postNoticeBtn").onclick = () => {
+      const txt = document.getElementById("newNoticeInput").value.trim();
+      if (!txt) return;
+      state.announcements.unshift({ id: "n" + Date.now(), text: txt, author: session.name, date: new Date().toLocaleDateString() });
+      addLog(session.name, "Posted a new announcement");
+      document.getElementById("newNoticeInput").value = "";
+      renderTeacherNotices();
+    };
+
+    document.getElementById("tResetPassBtn").onclick = () => {
+      const p1 = document.getElementById("tNewPassInput").value.trim();
+      const p2 = document.getElementById("tConfirmPassInput").value.trim();
+      const msg = document.getElementById("tPassSavedMsg");
+      if (!p1 || p1.length < 4) {
+        msg.style.color = "var(--danger)";
+        msg.textContent = "Password must be at least 4 characters.";
+        return;
+      }
+      if (p1 !== p2) {
+        msg.style.color = "var(--danger)";
+        msg.textContent = "Passwords do not match.";
+        return;
+      }
+      const teacherObj = state.users.find(u => u.id === session.id);
+      if (teacherObj) {
+        teacherObj.password = p1;
+        addLog(session.name, "Reset personal teacher password");
+        document.getElementById("tNewPassInput").value = "";
+        document.getElementById("tConfirmPassInput").value = "";
+        msg.style.color = "var(--success)";
+        msg.textContent = "Password updated successfully!";
+        setTimeout(() => { msg.textContent = ""; }, 3000);
+      }
+    };
+
+    document.getElementById("exportCsvBtn").onclick = () => {
+      const rows = [["Student Name", "Class", "Mode", "Score", "Total", "Percentage", "Date"]];
+      state.submissions.forEach(s => {
+        const sClass = s.studentClass || s.indexNumber || "";
+        rows.push([`"${s.studentName}"`, `"${sClass}"`, s.mode, s.score, s.total, `${s.pct}%`, `"${s.date}"`]);
+      });
+      const blob = new Blob([rows.map(r => r.join(",")).join("\n")], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "gbat_student_results.csv";
+      a.click();
+    };
+
+    /* ---------------- ADMIN DASHBOARD ---------------- */
+    document.querySelectorAll("#adminTabs .sub-tab").forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll("#adminTabs .sub-tab").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        ["aClasses", "aUsers", "aSettings", "aLogs"].forEach(id =>
+          document.getElementById(id).classList.toggle("hidden", id !== btn.dataset.tab)
+        );
+      };
+    });
+
+    document.getElementById("aNewRole").onchange = (e) => {
+      const isStudent = e.target.value === "student";
+      document.getElementById("aNewClassWrap").classList.toggle("hidden", !isStudent);
+      document.getElementById("aNewStaffWrap").classList.toggle("hidden", isStudent);
+    };
+
+    function renderAdminDashboard() {
+      const students = state.users.filter(u => u.role === "student");
+      const subs = state.submissions;
+      const avg = subs.length ? Math.round(subs.reduce((a, b) => a + b.pct, 0) / subs.length) : 0;
+
+      document.getElementById("aKpiStudents").textContent = students.length;
+      document.getElementById("aKpiClasses").textContent = state.classes.length;
+      document.getElementById("aKpiAvg").textContent = `${avg}%`;
+      document.getElementById("aKpiStatus").textContent = state.settings.quizOpen ? "OPEN" : "CLOSED";
+
+      // Render Class Tags
+      const classBox = document.getElementById("aClassList");
+      classBox.innerHTML = "";
+      if (!state.classes.length) {
+        classBox.textContent = "No classes created yet. Add one above.";
+      } else {
+        state.classes.forEach((cls, idx) => {
+          const tag = document.createElement("span");
+          tag.className = "class-tag";
+          tag.textContent = cls;
+          const delBtn = document.createElement("button");
+          delBtn.title = "Remove Class";
+          delBtn.textContent = "×";
+          delBtn.onclick = () => {
+            if (state.classes.length <= 1) return alert("Keep at least 1 class active.");
+            state.classes.splice(idx, 1);
+            addLog("Principal Admin", `Removed class: ${cls}`);
+            populateDropdowns();
+            renderAdminDashboard();
+          };
+          tag.appendChild(delBtn);
+          classBox.appendChild(tag);
+        });
+      }
+
+      // Render Passwords
+      document.getElementById("aAdminPassSetting").value = state.settings.adminPass || "admin123";
+      document.getElementById("aTeacherPassSetting").value = state.settings.teacherPass || "teacher123";
+
+      // Render Users Table
+      const tbody = document.getElementById("aUsersBody");
+      tbody.innerHTML = "";
+      state.users.forEach((u, idx) => {
+        const tr = document.createElement("tr");
+        const tdN = document.createElement("td"); tdN.textContent = u.name;
+        const tdR = document.createElement("td"); tdR.textContent = u.role.toUpperCase();
+        const tdC = document.createElement("td"); tdC.textContent = u.code;
+        const tdS = document.createElement("td");
+        const stBadge = document.createElement("span");
+        stBadge.className = `badge ${u.active ? "b-green" : "b-red"}`;
+        stBadge.textContent = u.active ? "Active" : "Suspended";
+        tdS.appendChild(stBadge);
+
+        const tdA = document.createElement("td");
+        tdA.style.display = "flex"; tdA.style.gap = "6px"; tdA.style.flexWrap = "wrap";
+        const tog = document.createElement("button");
+        tog.className = "btn btn-outline btn-sm";
+        tog.textContent = u.active ? "Suspend" : "Activate";
+        tog.onclick = () => {
+          u.active = !u.active;
+          addLog("Principal Admin", `${u.active ? "Activated" : "Suspended"} ${u.name}`);
+          renderAdminDashboard();
+        };
+        tdA.appendChild(tog);
+
+        if (u.role === "teacher" && u.password) {
+          const rst = document.createElement("button");
+          rst.className = "btn btn-secondary btn-sm";
+          rst.textContent = "Reset Pass";
+          rst.onclick = () => {
+            u.password = "";
+            addLog("Principal Admin", `Reset password for ${u.name} to default teacher password`);
+            alert(`${u.name}'s password has been reset to the Default Teacher Password.`);
+          };
+          tdA.appendChild(rst);
+        }
+
+        const del = document.createElement("button");
+        del.className = "btn btn-danger btn-sm";
+        del.textContent = "Remove";
+        del.onclick = () => {
+          state.users.splice(idx, 1);
+          addLog("Principal Admin", `Removed user ${u.name}`);
+          populateDropdowns();
+          renderAdminDashboard();
+        };
+        tdA.appendChild(del);
+        tr.append(tdN, tdR, tdC, tdS, tdA);
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("aQuizOpenSelect").value = String(state.settings.quizOpen);
+      document.getElementById("aExamMinsInput").value = state.settings.examMinutes;
+
+      const logBody = document.getElementById("aLogsBody");
+      logBody.innerHTML = "";
+      state.logs.forEach(l => {
+        const tr = document.createElement("tr");
+        [l.time, l.actor, l.action].forEach(v => {
+          const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
+        });
+        logBody.appendChild(tr);
+      });
+    }
+
+    document.getElementById("aAddClassBtn").onclick = () => {
+      const cls = document.getElementById("aNewClassInput").value.trim();
+      if (!cls) return alert("Enter a class name (e.g. JHS 3C).");
+      if (state.classes.some(c => c.toLowerCase() === cls.toLowerCase())) {
+        return alert("That class already exists.");
+      }
+      state.classes.push(cls);
+      addLog("Principal Admin", `Created new class: ${cls}`);
+      document.getElementById("aNewClassInput").value = "";
+      populateDropdowns();
+      renderAdminDashboard();
+    };
+
+    document.getElementById("aSavePassBtn").onclick = () => {
+      const admP = document.getElementById("aAdminPassSetting").value.trim();
+      const tchP = document.getElementById("aTeacherPassSetting").value.trim();
+      if (!admP || !tchP) return alert("Passwords cannot be empty.");
+      state.settings.adminPass = admP;
+      state.settings.teacherPass = tchP;
+      addLog("Principal Admin", "Updated Admin and Default Teacher passwords");
+      const msg = document.getElementById("aPassSavedMsg");
+      msg.textContent = "Passwords saved to cloud!";
+      setTimeout(() => { msg.textContent = ""; }, 2500);
+    };
+
+    document.getElementById("aAddUserBtn").onclick = () => {
+      const name = document.getElementById("aNewName").value.trim();
+      const role = document.getElementById("aNewRole").value;
+      const code = role === "student"
+        ? (document.getElementById("aNewClassSelect").value || "Unassigned")
+        : (document.getElementById("aNewStaffCode").value.trim() || "TCH-NEW");
+      if (!name) return alert("Enter a full name.");
+      const userObj = { id: "u" + Date.now(), name, role, code, active: true };
+      if (role === "teacher") userObj.password = "";
+      state.users.push(userObj);
+      addLog("Principal Admin", `Created ${role} account: ${name} (${code})`);
+      document.getElementById("aNewName").value = "";
+      document.getElementById("aNewStaffCode").value = "";
+      populateDropdowns();
+      renderAdminDashboard();
+    };
+
+    document.getElementById("aSaveSettingsBtn").onclick = () => {
+      state.settings.quizOpen = document.getElementById("aQuizOpenSelect").value === "true";
+      state.settings.examMinutes = Math.max(5, Number(document.getElementById("aExamMinsInput").value) || 45);
+      addLog("Principal Admin", `Updated exam settings (Open: ${state.settings.quizOpen}, Duration: ${state.settings.examMinutes} mins)`);
+      document.getElementById("aSettingsSaved").textContent = "Settings saved!";
+      setTimeout(() => document.getElementById("aSettingsSaved").textContent = "", 2500);
+      renderAdminDashboard();
+    };
+
+    document.getElementById("exportJsonBtn").onclick = () => {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "gbat_portal_backup.json";
+      a.click();
+    };
+
+    document.getElementById("resetDemoBtn").onclick = () => {
+      if (!confirm("Reset all submissions, classes, users, and custom questions back to default database?")) return;
+      state = getDefaultState();
+      saveState();
+      populateDropdowns();
+      renderAdminDashboard();
+    };
+  </script>
+</body>
+</html>
