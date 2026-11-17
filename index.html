@@ -112,6 +112,10 @@
       border: 1px solid rgba(134, 239, 172, 0.5);
       animation: pulseGlow 2.4s infinite;
     }
+    .pill.warn-pill {
+      background: rgba(220, 38, 38, 0.85);
+      border: 1px solid #fecaca;
+    }
     .btn-nav {
       background: rgba(255,255,255,0.2);
       color: #fff;
@@ -183,6 +187,30 @@
       box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.14);
     }
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+
+    /* Multi-select Class Checkboxes */
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: #f8fafc;
+    }
+    .checkbox-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .checkbox-pill input { width: auto; margin: 0; }
 
     /* Excel Dropzone */
     .drop-zone {
@@ -465,6 +493,27 @@
     .review-item.passed { border-left-color: var(--success); }
     .review-item.missed { border-left-color: var(--danger); }
 
+    /* Modal for assigning teacher classes */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 16px;
+    }
+    .modal-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 22px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: var(--shadow-md);
+      animation: fadeSlideUp 0.22s ease;
+    }
+
     /* Toast Notification */
     .toast-container {
       position: fixed;
@@ -523,6 +572,7 @@
       <span class="pill hidden" id="navRole"></span>
       <span class="pill hidden" id="navUser"></span>
       <span class="pill hidden" id="navTimer">⏱ 45:00</span>
+      <span class="pill warn-pill hidden" id="navTabWarn">⚠ Tab Switches: 0/3</span>
       <button class="btn-nav hidden" id="logoutBtn">Switch Role / Logout</button>
     </div>
   </nav>
@@ -544,13 +594,14 @@
       <div id="loginStudentForm">
         <div class="field">
           <label>Student Full Name</label>
-          <input type="text" id="stuNameInput" placeholder="Enter your full name" list="registeredStudentsList" />
+          <input type="text" id="stuNameInput" placeholder="Enter your registered full name" list="registeredStudentsList" />
           <datalist id="registeredStudentsList"></datalist>
         </div>
         <div class="field">
           <label>Select Class</label>
           <select id="stuClassSelect"></select>
         </div>
+        <p id="stuRosterHint" style="font-size:0.82rem; color:var(--muted); margin:-4px 0 12px;"></p>
         <button class="btn btn-primary btn-block" id="stuLoginBtn">Enter Student Dashboard</button>
       </div>
 
@@ -593,10 +644,10 @@
       </div>
 
       <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-label">Attempts Completed</div><div class="kpi-value" id="stuKpiAttempts">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Exam Attempts Used</div><div class="kpi-value" id="stuKpiAttempts">0</div></div>
         <div class="kpi-card"><div class="kpi-label">Average Score</div><div class="kpi-value" id="stuKpiAvg">0%</div></div>
         <div class="kpi-card"><div class="kpi-label">Best Score</div><div class="kpi-value" id="stuKpiBest">0%</div></div>
-        <div class="kpi-card"><div class="kpi-label">Questions in Bank</div><div class="kpi-value" id="stuKpiQs">40</div></div>
+        <div class="kpi-card"><div class="kpi-label" id="stuKpiQsLabel">Class Questions</div><div class="kpi-value" id="stuKpiQs">0</div></div>
       </div>
 
       <div class="card">
@@ -606,14 +657,15 @@
 
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-          <h3 style="margin:0;">GBAT Mathematics Paper 1 (Randomized Assessment)</h3>
-          <span class="badge b-blue">🔀 Questions &amp; Choices Auto-Shuffled</span>
+          <h3 style="margin:0;" id="stuQuizTitle">GBAT Mathematics Assessment</h3>
+          <span class="badge b-blue">🔀 Class-Specific &amp; Auto-Shuffled</span>
         </div>
         <p style="color:var(--muted); margin:10px 0 16px;" id="stuQuizDesc"></p>
         <div id="stuQuizControls" style="display:flex; gap:10px; flex-wrap:wrap;">
           <button class="btn btn-primary" id="startPracticeBtn">Start Practice Mode (Untimed)</button>
           <button class="btn btn-secondary" id="startTimedBtn">Start Exam Mode (Timed)</button>
         </div>
+        <p id="stuExamLimitMsg" class="hidden" style="color:var(--warn); font-weight:600; font-size:0.9rem; margin-top:10px;"></p>
         <p id="stuQuizClosedMsg" class="hidden" style="color:var(--danger); font-weight:700;">
           This assessment is currently closed by the Administrator.
         </p>
@@ -664,7 +716,7 @@
             <span>Score:</span><strong id="sideScore">0 / 0</strong>
           </div>
           <div style="font-size:0.9rem; display:flex; justify-content:space-between; margin-bottom:10px;">
-            <span>Remaining:</span><strong id="sideRemain">40</strong>
+            <span>Remaining:</span><strong id="sideRemain">0</strong>
           </div>
           <div style="font-size:0.8rem; font-weight:700; color:var(--muted); text-transform:uppercase;">Navigator (Orange dot = Flagged)</div>
           <div class="palette-grid" id="paletteGrid"></div>
@@ -696,20 +748,24 @@
           <h1>Teacher Dashboard</h1>
           <span style="color:var(--muted); font-size:0.92rem;" id="teacherMeta"></span>
         </div>
-        <button class="btn btn-success btn-sm" id="exportCsvBtn">Download Results (CSV)</button>
+        <button class="btn btn-success btn-sm" id="exportCsvBtn">Download My Classes Results (CSV)</button>
+      </div>
+
+      <div id="teacherNoClassWarning" class="card hidden" style="border-left:5px solid var(--warn); background:var(--warn-bg);">
+        <strong>No Classes Assigned Yet:</strong> Ask the Administrator to assign your classes (e.g., Basic 8 or Basic 9) under <em>Admin Dashboard → User Management</em> so you can view submissions and manage your class question bank.
       </div>
 
       <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-label">Total Submissions</div><div class="kpi-value" id="tKpiSubs">0</div></div>
-        <div class="kpi-card"><div class="kpi-label">Class Average</div><div class="kpi-value" id="tKpiAvg">0%</div></div>
-        <div class="kpi-card"><div class="kpi-label">Highest Score</div><div class="kpi-value" id="tKpiHigh">0%</div></div>
+        <div class="kpi-card"><div class="kpi-label">Exam Submissions (My Classes)</div><div class="kpi-value" id="tKpiSubs">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Official Exam Average</div><div class="kpi-value" id="tKpiAvg">0%</div></div>
+        <div class="kpi-card"><div class="kpi-label">Highest Exam Score</div><div class="kpi-value" id="tKpiHigh">0%</div></div>
         <div class="kpi-card"><div class="kpi-label">Hardest Question</div><div class="kpi-value" id="tKpiHard">-</div></div>
       </div>
 
       <div class="sub-tabs" id="teacherTabs">
         <button class="sub-tab active" data-tab="tSubs">Student Submissions</button>
         <button class="sub-tab" data-tab="tAnalytics">Question Analytics</button>
-        <button class="sub-tab" data-tab="tQuestions">Question Bank</button>
+        <button class="sub-tab" data-tab="tQuestions">Class Question Bank</button>
         <button class="sub-tab" data-tab="tNotices">Announcements</button>
         <button class="sub-tab" data-tab="tSecurity">Reset My Password</button>
       </div>
@@ -719,16 +775,21 @@
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
           <h3 style="margin:0;">Student Performance Records</h3>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <select id="tClassFilter" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:#fff;">
-              <option value="">All Classes</option>
+            <select id="tModeFilter" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:#fff;">
+              <option value="Exam">Exam Mode Only (Official)</option>
+              <option value="Practice">Practice Mode Only</option>
+              <option value="">All Modes</option>
             </select>
-            <input type="text" id="tSearchInput" placeholder="Search student name or class..." style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; width:240px;" />
+            <select id="tClassFilter" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:#fff;">
+              <option value="">All My Assigned Classes</option>
+            </select>
+            <input type="text" id="tSearchInput" placeholder="Search student name..." style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; width:210px;" />
           </div>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Student Name</th><th>Class</th><th>Mode</th><th>Score</th><th>%</th><th>Date</th><th>Review</th></tr>
+              <tr><th>Student Name</th><th>Class</th><th>Mode</th><th>Score</th><th>%</th><th>Integrity</th><th>Date</th><th>Review</th></tr>
             </thead>
             <tbody id="tSubsBody"></tbody>
           </table>
@@ -737,22 +798,36 @@
 
       <!-- T2: Question Analytics -->
       <div class="card hidden" id="tAnalytics">
-        <h3 style="margin-top:0;">Item Analysis (Accuracy per Question)</h3>
-        <p style="color:var(--muted); font-size:0.9rem;">Tracks accuracy accurately even when questions are shuffled for each student.</p>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+          <div>
+            <h3 style="margin:0;">Item Analysis (Exam Mode Accuracy per Question)</h3>
+            <p style="color:var(--muted); font-size:0.88rem; margin:4px 0 0;">Scoped strictly to your assigned classes and official Exam Mode attempts.</p>
+          </div>
+          <select id="tAnalyticsClassFilter" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:#fff;"></select>
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>#</th><th>Question</th><th>Attempts</th><th>Correct</th><th>Accuracy</th></tr>
+              <tr><th>#</th><th>Target Class</th><th>Question</th><th>Attempts</th><th>Correct</th><th>Accuracy</th></tr>
             </thead>
             <tbody id="tAnalyticsBody"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- T3: Question Bank -->
+      <!-- T3: Class-Isolated Question Bank -->
       <div class="card hidden" id="tQuestions">
-        <h3 style="margin-top:0;">Add New Question to Bank</h3>
-        <div class="field"><label>Question Text</label><input type="text" id="newQText" placeholder="Enter math question..." /></div>
+        <h3 style="margin-top:0;">Add New Question to Specific Class Bank</h3>
+        <div class="form-grid">
+          <div class="field" style="grid-column: span 2;">
+            <label>Question Text</label>
+            <input type="text" id="newQText" placeholder="Enter math question..." />
+          </div>
+          <div class="field">
+            <label>Assign to Class (Prevents Cross-Class Mixing)</label>
+            <select id="newQTargetClass"></select>
+          </div>
+        </div>
         <div class="form-grid">
           <div class="field"><label>Option A</label><input type="text" id="newOptA" /></div>
           <div class="field"><label>Option B</label><input type="text" id="newOptB" /></div>
@@ -771,17 +846,18 @@
             <textarea id="newQSol" rows="2" placeholder="Explain each step clearly..."></textarea>
           </div>
         </div>
-        <button class="btn btn-primary" id="addQuestionBtn">+ Add Question</button>
+        <button class="btn btn-primary" id="addQuestionBtn">+ Add Question to Class Bank</button>
 
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:26px; margin-bottom:12px;">
-          <h3 style="margin:0;">Current Question Bank (<span id="qBankCount"></span>)</h3>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="btn btn-secondary btn-sm" id="shuffleBankBtn">🔀 Shuffle Bank Order &amp; Save</button>
+          <h3 style="margin:0;">Question Bank (<span id="qBankCount">0</span> shown)</h3>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <select id="tBankClassFilter" style="padding:7px 11px; border:1px solid var(--border); border-radius:8px; background:#fff;"></select>
+            <button class="btn btn-secondary btn-sm" id="shuffleBankBtn">🔀 Shuffle Filtered Bank &amp; Save</button>
           </div>
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>#</th><th>Question</th><th>Correct</th><th>Reorder / Action</th></tr></thead>
+            <thead><tr><th>#</th><th>Class</th><th>Question</th><th>Correct</th><th>Reorder / Action</th></tr></thead>
             <tbody id="tQuestionsBody"></tbody>
           </table>
         </div>
@@ -790,9 +866,15 @@
       <!-- T4: Announcements -->
       <div class="card hidden" id="tNotices">
         <h3 style="margin-top:0;">Post Class Announcement</h3>
-        <div class="field">
-          <label>Message for Students</label>
-          <textarea id="newNoticeInput" rows="2" placeholder="e.g. Complete all 40 questions before Friday..."></textarea>
+        <div class="form-grid">
+          <div class="field">
+            <label>Target Class</label>
+            <select id="newNoticeClass"></select>
+          </div>
+          <div class="field" style="grid-column: span 2;">
+            <label>Message for Students</label>
+            <textarea id="newNoticeInput" rows="2" placeholder="e.g. Complete all questions before Friday..."></textarea>
+          </div>
         </div>
         <button class="btn btn-primary" id="postNoticeBtn">Post Announcement</button>
         <div id="tNoticesList" style="margin-top:18px;"></div>
@@ -801,7 +883,7 @@
       <!-- T5: Teacher Password Reset -->
       <div class="card hidden" id="tSecurity">
         <h3 style="margin-top:0;">Reset My Teacher Password</h3>
-        <p style="color:var(--muted); font-size:0.9rem;">Set a personal password for your teacher account. Updates sync immediately to the cloud.</p>
+        <p style="color:var(--muted); font-size:0.9rem;">Set a personal password for your teacher account. Stored securely with SHA-256 encryption.</p>
         <div class="form-grid" style="max-width:600px;">
           <div class="field">
             <label>New Password</label>
@@ -822,30 +904,30 @@
       <div class="dash-header">
         <div>
           <h1>Administrator Dashboard</h1>
-          <span style="color:var(--muted); font-size:0.92rem;">System-wide control, Excel student import, class setup, and password controls</span>
+          <span style="color:var(--muted); font-size:0.92rem;">System-wide control, teacher class assignments, Excel student import, and exam security</span>
         </div>
       </div>
 
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-label">Registered Students</div><div class="kpi-value" id="aKpiStudents">0</div></div>
         <div class="kpi-card"><div class="kpi-label">Active Classes</div><div class="kpi-value" id="aKpiClasses">0</div></div>
-        <div class="kpi-card"><div class="kpi-label">School-Wide Avg</div><div class="kpi-value" id="aKpiAvg">0%</div></div>
-        <div class="kpi-card"><div class="kpi-label">Assessment Status</div><div class="kpi-value" id="aKpiStatus">OPEN</div></div>
+        <div class="kpi-card"><div class="kpi-label">School Exam Avg</div><div class="kpi-value" id="aKpiAvg">0%</div></div>
+        <div class="kpi-card"><div class="kpi-label">Roster Lock</div><div class="kpi-value" id="aKpiRoster">ON</div></div>
       </div>
 
       <div class="sub-tabs" id="adminTabs">
         <button class="sub-tab active" data-tab="aClasses">Classes &amp; Passwords</button>
-        <button class="sub-tab" data-tab="aUsers">User Management &amp; Excel Upload</button>
-        <button class="sub-tab" data-tab="aSettings">Exam Controls</button>
+        <button class="sub-tab" data-tab="aUsers">Users, Teacher Classes &amp; Excel</button>
+        <button class="sub-tab" data-tab="aSettings">Exam &amp; Security Controls</button>
         <button class="sub-tab" data-tab="aLogs">Activity Logs &amp; Backup</button>
       </div>
 
       <!-- A0: Classes & Password Management -->
       <div class="card" id="aClasses">
         <h3 style="margin-top:0;">Manage Student Classes</h3>
-        <p style="color:var(--muted); font-size:0.9rem; margin-top:-6px;">Classes added here appear immediately in the Student Sign-In dropdown.</p>
+        <p style="color:var(--muted); font-size:0.9rem; margin-top:-6px;">Create classes (e.g., Basic 8, Basic 9) before assigning them to teachers or importing students.</p>
         <div style="display:flex; gap:10px; flex-wrap:wrap; max-width:520px;">
-          <input type="text" id="aNewClassInput" placeholder="e.g. JHS 3A, JHS 3B, SHS 1 Gold" style="flex:1; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:0.94rem;" />
+          <input type="text" id="aNewClassInput" placeholder="e.g. Basic 8, Basic 9, SHS 1 Gold" style="flex:1; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:0.94rem;" />
           <button class="btn btn-primary" id="aAddClassBtn">+ Add Class</button>
         </div>
         <div class="tag-list" id="aClassList"></div>
@@ -853,26 +935,27 @@
         <hr style="border:none; border-top:1px solid var(--border); margin:24px 0;" />
 
         <h3 style="margin-top:0;">Reset Admin &amp; Default Teacher Passwords</h3>
+        <p style="color:var(--muted); font-size:0.88rem; margin-top:-6px;">Enter a new password below to update it (stored encrypted in the database).</p>
         <div class="form-grid" style="max-width:650px;">
           <div class="field">
-            <label>Admin Dashboard Password</label>
-            <input type="text" id="aAdminPassSetting" />
+            <label>New Admin Dashboard Password</label>
+            <input type="password" id="aAdminPassSetting" placeholder="Leave blank to keep current" />
           </div>
           <div class="field">
-            <label>Default Teacher Password (for teachers without a custom password)</label>
-            <input type="text" id="aTeacherPassSetting" />
+            <label>New Default Teacher Password</label>
+            <input type="password" id="aTeacherPassSetting" placeholder="Leave blank to keep current" />
           </div>
         </div>
-        <button class="btn btn-primary" id="aSavePassBtn">Save Passwords</button>
+        <button class="btn btn-primary" id="aSavePassBtn">Update Passwords</button>
         <span id="aPassSavedMsg" style="margin-left:10px; color:var(--success); font-weight:600;"></span>
       </div>
 
-      <!-- A1: Users & Bulk Excel Upload -->
+      <!-- A1: Users, Teacher Class Assignments & Bulk Excel Upload -->
       <div class="card hidden" id="aUsers">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
           <div>
             <h3 style="margin:0;">Bulk Upload Students via Excel (.xlsx, .xls, .csv)</h3>
-            <p style="color:var(--muted); font-size:0.88rem; margin:4px 0 0;">Spreadsheet columns: <strong>Full Name</strong> and <strong>Class</strong>. New classes in the file are created automatically.</p>
+            <p style="color:var(--muted); font-size:0.88rem; margin:4px 0 0;">Columns: <strong>Full Name</strong> and <strong>Class</strong>. Duplicate spaces are cleaned automatically.</p>
           </div>
           <button class="btn btn-outline btn-sm" id="downloadExcelTemplateBtn">⬇ Download Excel Template (.xlsx)</button>
         </div>
@@ -887,45 +970,65 @@
 
         <hr style="border:none; border-top:1px solid var(--border); margin:24px 0;" />
 
-        <h3 style="margin-top:0;">Add Single Student or Teacher</h3>
+        <h3 style="margin-top:0;">Add Teacher (with Assigned Classes) or Student</h3>
         <div class="form-grid">
-          <div class="field"><label>Full Name</label><input type="text" id="aNewName" placeholder="e.g. Yaw Boateng" /></div>
+          <div class="field"><label>Full Name</label><input type="text" id="aNewName" placeholder="e.g. Mr. Kwesi Appiah" /></div>
           <div class="field">
             <label>Role</label>
             <select id="aNewRole">
-              <option value="student">Student</option>
               <option value="teacher">Teacher</option>
+              <option value="student">Student</option>
             </select>
           </div>
-          <div class="field" id="aNewClassWrap">
-            <label>Assign Class</label>
+          <div class="field hidden" id="aNewClassWrap">
+            <label>Assign Student Class</label>
             <select id="aNewClassSelect"></select>
           </div>
-          <div class="field hidden" id="aNewStaffWrap">
+          <div class="field" id="aNewStaffWrap">
             <label>Staff ID</label>
             <input type="text" id="aNewStaffCode" placeholder="e.g. TCH-003" />
           </div>
+        </div>
+        <div class="field" id="aNewTeacherClassesWrap">
+          <label>Assign Classes This Teacher Can Manage &amp; View</label>
+          <div class="checkbox-group" id="aNewTeacherClassCheckboxes"></div>
         </div>
         <button class="btn btn-primary" id="aAddUserBtn">+ Create User</button>
 
         <h3 style="margin-top:24px;">All Portal Accounts (<span id="aUserCount">0</span>)</h3>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Name</th><th>Role</th><th>Class / Staff ID</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Name</th><th>Role</th><th>Class / Assigned Classes</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="aUsersBody"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- A2: Exam Controls -->
+      <!-- A2: Exam & Security Controls -->
       <div class="card hidden" id="aSettings">
-        <h3 style="margin-top:0;">Assessment Configuration</h3>
+        <h3 style="margin-top:0;">Assessment &amp; Anti-Cheat Security Configuration</h3>
         <div class="form-grid">
           <div class="field">
             <label>Quiz Availability for Students</label>
             <select id="aQuizOpenSelect">
               <option value="true">Open (Students can take quiz)</option>
               <option value="false">Closed (Locked for maintenance/review)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Student Sign-In Roster Lock</label>
+            <select id="aRosterLockSelect">
+              <option value="true">Strict Roster Lock (Only registered/Excel students can sign in)</option>
+              <option value="false">Open Registration (Any student name can sign in)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Max Official Exam Attempts per Student</label>
+            <select id="aMaxExamAttemptsSelect">
+              <option value="1">1 Attempt Only (Strict Mock Exam)</option>
+              <option value="2">2 Attempts Allowed</option>
+              <option value="3">3 Attempts Allowed</option>
+              <option value="0">Unlimited Exam Attempts</option>
             </select>
           </div>
           <div class="field">
@@ -940,8 +1043,15 @@
               <option value="none">Fixed Order (No Shuffle)</option>
             </select>
           </div>
+          <div class="field">
+            <label>Exam Tab-Switch Anti-Cheat</label>
+            <select id="aAntiCheatSelect">
+              <option value="true">Enabled (Log &amp; auto-submit after 3 tab switches)</option>
+              <option value="false">Disabled</option>
+            </select>
+          </div>
         </div>
-        <button class="btn btn-primary" id="aSaveSettingsBtn">Save Settings</button>
+        <button class="btn btn-primary" id="aSaveSettingsBtn">Save Security &amp; Exam Settings</button>
         <span id="aSettingsSaved" style="margin-left:10px; color:var(--success); font-weight:600;"></span>
       </div>
 
@@ -965,11 +1075,24 @@
 
   </main>
 
+  <!-- Modal for Editing Teacher Assigned Classes -->
+  <div class="modal-backdrop hidden" id="editTeacherModal">
+    <div class="modal-card">
+      <h3 style="margin-top:0;" id="editTeacherModalTitle">Assign Classes to Teacher</h3>
+      <p style="color:var(--muted); font-size:0.88rem;">Select which classes this teacher can access in their dashboard:</p>
+      <div class="checkbox-group" id="editTeacherClassBoxes" style="margin-bottom:18px;"></div>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="btn btn-secondary btn-sm" id="closeEditTeacherModalBtn">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="saveEditTeacherClassesBtn">Save Class Assignment</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-container" id="toastContainer"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+    import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDNL-VVWcySHu7bKDPV0TDs8DkxiFqxPz4",
@@ -984,10 +1107,22 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const stateRef = ref(db, "gbat_portal_v1");
+    const ROOT_PATH = "gbat_portal_v1";
+    const rootRef = ref(db, ROOT_PATH);
     const syncBadge = document.getElementById("syncStatus");
 
     const letters = ["A", "B", "C", "D"];
+    const EXAM_STORAGE_KEY = "gbat_active_exam_v2";
+
+    /* ---------------- CRYPTO & SANITIZATION HELPERS ---------------- */
+    async function sha256(str) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function normalizeName(raw) {
+      return String(raw || "").replace(/\s+/g, " ").trim();
+    }
 
     function showToast(message, type = "info") {
       const container = document.getElementById("toastContainer");
@@ -1000,7 +1135,7 @@
         toast.style.transform = "translateY(8px)";
         toast.style.transition = "all 0.25s ease";
         setTimeout(() => toast.remove(), 260);
-      }, 3000);
+      }, 3200);
     }
 
     function launchConfetti() {
@@ -1028,70 +1163,74 @@
     }
 
     const defaultQuestions = [
-      { id: "q1", q: "A point P(6, -3) is rotated 180° about the origin. Find its image.", options: ["(-6, 3)", "(6, 3)", "(-3, 6)", "(-6, -3)"], ans: 0, sol: "Rule for 180° rotation about the origin: (x, y) → (-x, -y).\nSubstitute P(6, -3): x' = -6, y' = -(-3) = 3.\nImage = (-6, 3)." },
-      { id: "q2", q: "Write the next two terms: 3, 7, 15, 31, __, __.", options: ["47, 63", "62, 126", "63, 127", "64, 128"], ans: 2, sol: "Differences: 7-3=4, 15-7=8, 31-15=16.\nDifferences double each step (+32, +64).\n31 + 32 = 63, and 63 + 64 = 127." },
-      { id: "q3", q: "Convert 0.825 to a percentage.", options: ["8.25%", "82.5%", "825%", "0.825%"], ans: 1, sol: "Multiply by 100%: 0.825 × 100% = 82.5%." },
-      { id: "q4", q: "Find the HCF of 18, 30 and 48.", options: ["3", "6", "9", "12"], ans: 1, sol: "18 = 2 × 3², 30 = 2 × 3 × 5, 48 = 2⁴ × 3.\nCommon factors with lowest powers: 2 × 3 = 6." },
-      { id: "q5", q: "Which number is divisible by both 7 and 11?", options: ["154", "165", "176", "187"], ans: 0, sol: "7 × 11 = 77.\nMultiples of 77: 77, 154, 231...\nSo 154 is divisible by both 7 and 11." },
-      { id: "q6", q: "Akosua is x years old. In 9 years, she will be 25. Which equation represents the statement?", options: ["x - 9 = 25", "x + 9 = 25", "25 + x = 9", "9x = 25"], ans: 1, sol: "Current age = x. Age in 9 years = x + 9.\nEquation: x + 9 = 25." },
-      { id: "q7", q: "Find the gradient of the line through R(2, -1) and S(6, 7).", options: ["1/2", "2", "3", "4"], ans: 1, sol: "m = (y₂ - y₁) / (x₂ - x₁) = (7 - (-1)) / (6 - 2) = 8 / 4 = 2." },
-      { id: "q8", q: "Find the median of the composite numbers less than 18.", options: ["9", "10", "11", "12"], ans: 1, sol: "Composite numbers < 18: 4, 6, 8, 9, 10, 12, 14, 15, 16 (9 numbers).\nMiddle (5th) value = 10." },
-      { id: "q9", q: "Two angles of a triangle add up to 137°. Find the third angle.", options: ["33°", "43°", "47°", "53°"], ans: 1, sol: "Angles in a triangle sum to 180°.\nThird angle = 180° - 137° = 43°." },
-      { id: "q10", q: "The bearing of Lapaz from Achimota is 128°. Find the bearing of A from Lapaz.", options: ["052°", "128°", "232°", "308°"], ans: 3, sol: "Back bearing: since 128° < 180°, add 180°.\n128° + 180° = 308°." },
-      { id: "q11", q: "Expand and simplify (m - 3)(m + 5).", options: ["m² + 2m - 15", "m² + 8m - 15", "m² - 2m - 15", "m² + 2m + 15"], ans: 0, sol: "m(m + 5) - 3(m + 5) = m² + 5m - 3m - 15 = m² + 2m - 15." },
-      { id: "q12", q: "A bus travels at 72 km/h for 2.5 hours. Find the distance covered.", options: ["144 km", "160 km", "180 km", "216 km"], ans: 2, sol: "Distance = Speed × Time = 72 × 2.5 = 144 + 36 = 180 km." },
-      { id: "q13", q: "A cyclist travels 20 km north and then 15 km east. How far is the cyclist from the starting point?", options: ["25 km", "30 km", "35 km", "40 km"], ans: 0, sol: "By Pythagoras' theorem: d = √(20² + 15²) = √(400 + 225) = √625 = 25 km." },
-      { id: "q14", q: "A circle has a diameter of 35 cm. Find its circumference. [Take π = 22/7]", options: ["55 cm", "70 cm", "110 cm", "220 cm"], ans: 2, sol: "C = πd = (22/7) × 35 = 22 × 5 = 110 cm." },
-      { id: "q15", q: "A point (-4, 3) is rotated 90° anticlockwise about the origin. Find its image.", options: ["(-3, -4)", "(3, 4)", "(-3, 4)", "(4, -3)"], ans: 0, sol: "90° anticlockwise rule: (x, y) → (-y, x).\n(-4, 3) → (-3, -4)." },
-      { id: "q16", q: "The mean of 6, 8, h, 10 and 11 is 9. Find h.", options: ["8", "9", "10", "11"], ans: 2, sol: "(6 + 8 + h + 10 + 11) / 5 = 9\n35 + h = 45\nh = 45 - 35 = 10." },
-      { id: "q17", q: "Express 9.8 litres in millilitres.", options: ["98 ml", "980 ml", "9,800 ml", "98,000 ml"], ans: 2, sol: "1 litre = 1,000 ml.\n9.8 × 1,000 = 9,800 ml." },
-      { id: "q18", q: "Two fair dice are thrown. Find the probability that their sum is 7.", options: ["1/12", "1/9", "1/6", "1/4"], ans: 2, sol: "Total outcomes = 36.\nPairs summing to 7: (1,6), (2,5), (3,4), (4,3), (5,2), (6,1) = 6 pairs.\nProbability = 6/36 = 1/6." },
-      { id: "q19", q: "Round 684.756 to the nearest tenth.", options: ["684.7", "684.8", "684.75", "685.0"], ans: 1, sol: "Tenths digit is 7; next digit is 5 (round up).\n684.756 → 684.8." },
-      { id: "q20", q: "Write nine million, seventy thousand and six in figures.", options: ["9,700,006", "9,070,006", "9,007,006", "9,070,600"], ans: 1, sol: "9,000,000 + 70,000 + 6 = 9,070,006." },
-      { id: "q21", q: "A worker earns GH₵145 each day. How much will the worker earn in 12 days?", options: ["GH₵1,620", "GH₵1,680", "GH₵1,740", "GH₵1,780"], ans: 2, sol: "145 × 12 = (145 × 10) + (145 × 2) = 1,450 + 290 = GH₵1,740." },
-      { id: "q22", q: "Each exterior angle of a regular polygon is 20°. How many sides does the polygon have?", options: ["16", "18", "20", "24"], ans: 1, sol: "n = 360° / 20° = 18 sides." },
-      { id: "q23", q: "A regular octagon has side length 9.5 cm. Find its perimeter.", options: ["66.5 cm", "72.0 cm", "76.0 cm", "85.5 cm"], ans: 2, sol: "Octagon has 8 sides.\nPerimeter = 8 × 9.5 = 76.0 cm." },
-      { id: "q24", q: "Use the isosceles triangle to find h.", svg: `<svg width="220" height="150" viewBox="0 0 240 170" xmlns="http://www.w3.org/2000/svg"><polygon points="120,20 40,140 200,140" fill="none" stroke="#0f172a" stroke-width="2.5"/><line x1="120" y1="20" x2="120" y2="140" stroke="#0f172a" stroke-width="1.8" stroke-dasharray="5,4"/><rect x="120" y="128" width="12" height="12" fill="none" stroke="#0f172a" stroke-width="1.5"/><text x="56" y="78" font-size="14" font-weight="600" fill="#0f172a">13 cm</text><text x="155" y="78" font-size="14" font-weight="600" fill="#0f172a">13 cm</text><text x="126" y="92" font-size="14" font-weight="700" fill="#1d4ed8">h</text><text x="102" y="160" font-size="14" font-weight="600" fill="#0f172a">10 cm</text></svg>`, options: ["10 cm", "12 cm", "13 cm", "15 cm"], ans: 1, sol: "Half base = 10 ÷ 2 = 5 cm.\nh = √(13² - 5²) = √(169 - 25) = √144 = 12 cm." },
-      { id: "q25", q: "Round GH₵86,549 to the nearest thousand cedis.", options: ["GH₵86,000", "GH₵86,500", "GH₵87,000", "GH₵90,000"], ans: 2, sol: "Thousands digit is 6; hundreds digit is 5 (round up).\nGH₵87,000." },
-      { id: "q26", q: "The area of a square tile is 144 cm². Find its perimeter.", options: ["24 cm", "36 cm", "48 cm", "56 cm"], ans: 2, sol: "Side = √144 = 12 cm.\nPerimeter = 4 × 12 = 48 cm." },
-      { id: "q27", q: "A cube has side 7 cm. Find its total surface area.", options: ["196 cm²", "294 cm²", "343 cm²", "392 cm²"], ans: 1, sol: "TSA = 6s² = 6 × 7² = 6 × 49 = 294 cm²." },
-      { id: "q28", q: "Use the diagram to find y.", svg: `<svg width="240" height="135" viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><polygon points="45,25 225,75 45,125" fill="none" stroke="#0f172a" stroke-width="2.5"/><text x="30" y="25" font-size="14" font-weight="700" fill="#0f172a">A</text><text x="232" y="80" font-size="14" font-weight="700" fill="#0f172a">B</text><text x="30" y="132" font-size="14" font-weight="700" fill="#0f172a">C</text><text x="53" y="52" font-size="14" font-weight="700" fill="#1d4ed8">y°</text><text x="53" y="110" font-size="14" font-weight="600" fill="#0f172a">52°</text><text x="165" y="79" font-size="14" font-weight="600" fill="#0f172a">31°</text></svg>`, options: ["83°", "97°", "101°", "128°"], ans: 1, sol: "y° + 52° + 31° = 180°\ny = 180° - 83° = 97°." },
-      { id: "q29", q: "Given 4p : 12 = 5 : 15, find p.", options: ["1", "2", "3", "4"], ans: 0, sol: "4p / 12 = 5 / 15\np / 3 = 1 / 3 → p = 1." },
-      { id: "q30", q: "Translate \"five times a number decreased by 12\" into an algebraic expression.", options: ["5x + 12", "5x - 12", "12x - 5", "5 - 12x"], ans: 1, sol: "5 times x minus 12 = 5x - 12." },
-      { id: "q31", q: "A fair die is tossed once. Find the probability of obtaining an odd prime number.", options: ["1/6", "1/3", "1/2", "2/3"], ans: 1, sol: "Odd primes on a die: {3, 5} (2 outcomes out of 6).\nProbability = 2/6 = 1/3." },
-      { id: "q32", q: "A learner scores 54 out of 60 marks. Express the score as a percentage.", options: ["80%", "85%", "90%", "95%"], ans: 2, sol: "(54 / 60) × 100% = (9/10) × 100% = 90%." },
-      { id: "q33", q: "Find the equation of a line with gradient 2 and y-intercept -5.", options: ["y = 2x - 5", "y = -2x - 5", "y = 5x + 2", "y = 2x + 5"], ans: 0, sol: "y = mx + c → y = 2x - 5." },
-      { id: "q34", q: "Solve the inequality 3(2x - 1) - 4x > 5.", options: ["x > 4", "x < 4", "x > 1", "x < 1"], ans: 0, sol: "6x - 3 - 4x > 5\n2x > 8\nx > 4." },
-      { id: "q35", q: "The number line represents which inequality?", svg: `<svg width="300" height="70" viewBox="0 0 320 75" xmlns="http://www.w3.org/2000/svg"><line x1="20" y1="45" x2="300" y2="45" stroke="#0f172a" stroke-width="2"/><polygon points="15,45 25,40 25,50" fill="#0f172a"/><polygon points="305,45 295,40 295,50" fill="#0f172a"/><g font-size="12" text-anchor="middle" fill="#0f172a"><line x1="40" y1="40" x2="40" y2="50" stroke="#0f172a"/><text x="40" y="65">-4</text><line x1="70" y1="40" x2="70" y2="50" stroke="#0f172a"/><text x="70" y="65">-3</text><line x1="100" y1="40" x2="100" y2="50" stroke="#0f172a"/><text x="100" y="65">-2</text><line x1="130" y1="40" x2="130" y2="50" stroke="#0f172a"/><text x="130" y="65">-1</text><line x1="160" y1="40" x2="160" y2="50" stroke="#0f172a"/><text x="160" y="65">0</text><line x1="190" y1="40" x2="190" y2="50" stroke="#0f172a"/><text x="190" y="65">1</text><line x1="220" y1="40" x2="220" y2="50" stroke="#0f172a"/><text x="220" y="65">2</text><line x1="250" y1="40" x2="250" y2="50" stroke="#0f172a"/><text x="250" y="65">3</text><line x1="280" y1="40" x2="280" y2="50" stroke="#0f172a"/><text x="280" y="65">4</text></g><line x1="214" y1="22" x2="25" y2="22" stroke="#1d4ed8" stroke-width="3"/><polygon points="18,22 30,16 30,28" fill="#1d4ed8"/><circle cx="220" cy="22" r="6" fill="#ffffff" stroke="#1d4ed8" stroke-width="3"/></svg>`, options: ["x < 2", "x ≤ 2", "x > 2", "x ≥ 2"], ans: 0, sol: "Open circle at 2 (excluded) and arrow pointing left (< 2) → x < 2." },
-      { id: "q36", q: "Round 7,846,391 to the nearest ten thousand.", options: ["7,840,000", "7,846,000", "7,850,000", "7,900,000"], ans: 2, sol: "Ten-thousands digit is 4; thousands digit is 6 (round up) → 7,850,000." },
-      { id: "q37", q: "A triangle has an area of 72 cm² and a perpendicular height of 12 cm. Find its base.", options: ["6 cm", "10 cm", "12 cm", "14 cm"], ans: 2, sol: "72 = (1/2) × b × 12 → 72 = 6b → b = 12 cm." },
-      { id: "q38", q: "A line has equation y = -3x + 8. Which ordered pair lies on the line?", options: ["(2, 2)", "(1, 6)", "(0, 3)", "(3, 2)"], ans: 0, sol: "Test (2, 2): y = -3(2) + 8 = -6 + 8 = 2. Matches!" },
-      { id: "q39", q: "Under the mapping x → 3x - 4, find the image of 9.", options: ["19", "21", "23", "27"], ans: 2, sol: "3(9) - 4 = 27 - 4 = 23." },
-      { id: "q40", q: "Find the LCM of 12, 15 and 20.", options: ["40", "50", "60", "120"], ans: 2, sol: "12 = 2²×3, 15 = 3×5, 20 = 2²×5.\nLCM = 2² × 3 × 5 = 60." }
+      { id: "q1", targetClass: "ALL", q: "A point P(6, -3) is rotated 180° about the origin. Find its image.", options: ["(-6, 3)", "(6, 3)", "(-3, 6)", "(-6, -3)"], ans: 0, sol: "Rule for 180° rotation about the origin: (x, y) → (-x, -y).\nSubstitute P(6, -3): x' = -6, y' = -(-3) = 3.\nImage = (-6, 3)." },
+      { id: "q2", targetClass: "ALL", q: "Write the next two terms: 3, 7, 15, 31, __, __.", options: ["47, 63", "62, 126", "63, 127", "64, 128"], ans: 2, sol: "Differences: 7-3=4, 15-7=8, 31-15=16.\nDifferences double each step (+32, +64).\n31 + 32 = 63, and 63 + 64 = 127." },
+      { id: "q3", targetClass: "ALL", q: "Convert 0.825 to a percentage.", options: ["8.25%", "82.5%", "825%", "0.825%"], ans: 1, sol: "Multiply by 100%: 0.825 × 100% = 82.5%." },
+      { id: "q4", targetClass: "ALL", q: "Find the HCF of 18, 30 and 48.", options: ["3", "6", "9", "12"], ans: 1, sol: "18 = 2 × 3², 30 = 2 × 3 × 5, 48 = 2⁴ × 3.\nCommon factors with lowest powers: 2 × 3 = 6." },
+      { id: "q5", targetClass: "ALL", q: "Which number is divisible by both 7 and 11?", options: ["154", "165", "176", "187"], ans: 0, sol: "7 × 11 = 77.\nMultiples of 77: 77, 154, 231...\nSo 154 is divisible by both 7 and 11." },
+      { id: "q6", targetClass: "ALL", q: "Akosua is x years old. In 9 years, she will be 25. Which equation represents the statement?", options: ["x - 9 = 25", "x + 9 = 25", "25 + x = 9", "9x = 25"], ans: 1, sol: "Current age = x. Age in 9 years = x + 9.\nEquation: x + 9 = 25." },
+      { id: "q7", targetClass: "ALL", q: "Find the gradient of the line through R(2, -1) and S(6, 7).", options: ["1/2", "2", "3", "4"], ans: 1, sol: "m = (y₂ - y₁) / (x₂ - x₁) = (7 - (-1)) / (6 - 2) = 8 / 4 = 2." },
+      { id: "q8", targetClass: "ALL", q: "Find the median of the composite numbers less than 18.", options: ["9", "10", "11", "12"], ans: 1, sol: "Composite numbers < 18: 4, 6, 8, 9, 10, 12, 14, 15, 16 (9 numbers).\nMiddle (5th) value = 10." },
+      { id: "q9", targetClass: "ALL", q: "Two angles of a triangle add up to 137°. Find the third angle.", options: ["33°", "43°", "47°", "53°"], ans: 1, sol: "Angles in a triangle sum to 180°.\nThird angle = 180° - 137° = 43°." },
+      { id: "q10", targetClass: "ALL", q: "The bearing of Lapaz from Achimota is 128°. Find the bearing of A from Lapaz.", options: ["052°", "128°", "232°", "308°"], ans: 3, sol: "Back bearing: since 128° < 180°, add 180°.\n128° + 180° = 308°." },
+      { id: "q11", targetClass: "ALL", q: "Expand and simplify (m - 3)(m + 5).", options: ["m² + 2m - 15", "m² + 8m - 15", "m² - 2m - 15", "m² + 2m + 15"], ans: 0, sol: "m(m + 5) - 3(m + 5) = m² + 5m - 3m - 15 = m² + 2m - 15." },
+      { id: "q12", targetClass: "ALL", q: "A bus travels at 72 km/h for 2.5 hours. Find the distance covered.", options: ["144 km", "160 km", "180 km", "216 km"], ans: 2, sol: "Distance = Speed × Time = 72 × 2.5 = 144 + 36 = 180 km." },
+      { id: "q13", targetClass: "ALL", q: "A cyclist travels 20 km north and then 15 km east. How far is the cyclist from the starting point?", options: ["25 km", "30 km", "35 km", "40 km"], ans: 0, sol: "By Pythagoras' theorem: d = √(20² + 15²) = √(400 + 225) = √625 = 25 km." },
+      { id: "q14", targetClass: "ALL", q: "A circle has a diameter of 35 cm. Find its circumference. [Take π = 22/7]", options: ["55 cm", "70 cm", "110 cm", "220 cm"], ans: 2, sol: "C = πd = (22/7) × 35 = 22 × 5 = 110 cm." },
+      { id: "q15", targetClass: "ALL", q: "A point (-4, 3) is rotated 90° anticlockwise about the origin. Find its image.", options: ["(-3, -4)", "(3, 4)", "(-3, 4)", "(4, -3)"], ans: 0, sol: "90° anticlockwise rule: (x, y) → (-y, x).\n(-4, 3) → (-3, -4)." },
+      { id: "q16", targetClass: "ALL", q: "The mean of 6, 8, h, 10 and 11 is 9. Find h.", options: ["8", "9", "10", "11"], ans: 2, sol: "(6 + 8 + h + 10 + 11) / 5 = 9\n35 + h = 45\nh = 45 - 35 = 10." },
+      { id: "q17", targetClass: "ALL", q: "Express 9.8 litres in millilitres.", options: ["98 ml", "980 ml", "9,800 ml", "98,000 ml"], ans: 2, sol: "1 litre = 1,000 ml.\n9.8 × 1,000 = 9,800 ml." },
+      { id: "q18", targetClass: "ALL", q: "Two fair dice are thrown. Find the probability that their sum is 7.", options: ["1/12", "1/9", "1/6", "1/4"], ans: 2, sol: "Total outcomes = 36.\nPairs summing to 7: (1,6), (2,5), (3,4), (4,3), (5,2), (6,1) = 6 pairs.\nProbability = 6/36 = 1/6." },
+      { id: "q19", targetClass: "ALL", q: "Round 684.756 to the nearest tenth.", options: ["684.7", "684.8", "684.75", "685.0"], ans: 1, sol: "Tenths digit is 7; next digit is 5 (round up).\n684.756 → 684.8." },
+      { id: "q20", targetClass: "ALL", q: "Write nine million, seventy thousand and six in figures.", options: ["9,700,006", "9,070,006", "9,007,006", "9,070,600"], ans: 1, sol: "9,000,000 + 70,000 + 6 = 9,070,006." },
+      { id: "q21", targetClass: "ALL", q: "A worker earns GH₵145 each day. How much will the worker earn in 12 days?", options: ["GH₵1,620", "GH₵1,680", "GH₵1,740", "GH₵1,780"], ans: 2, sol: "145 × 12 = (145 × 10) + (145 × 2) = 1,450 + 290 = GH₵1,740." },
+      { id: "q22", targetClass: "ALL", q: "Each exterior angle of a regular polygon is 20°. How many sides does the polygon have?", options: ["16", "18", "20", "24"], ans: 1, sol: "n = 360° / 20° = 18 sides." },
+      { id: "q23", targetClass: "ALL", q: "A regular octagon has side length 9.5 cm. Find its perimeter.", options: ["66.5 cm", "72.0 cm", "76.0 cm", "85.5 cm"], ans: 2, sol: "Octagon has 8 sides.\nPerimeter = 8 × 9.5 = 76.0 cm." },
+      { id: "q24", targetClass: "ALL", q: "Use the isosceles triangle to find h.", svg: `<svg width="220" height="150" viewBox="0 0 240 170" xmlns="http://www.w3.org/2000/svg"><polygon points="120,20 40,140 200,140" fill="none" stroke="#0f172a" stroke-width="2.5"/><line x1="120" y1="20" x2="120" y2="140" stroke="#0f172a" stroke-width="1.8" stroke-dasharray="5,4"/><rect x="120" y="128" width="12" height="12" fill="none" stroke="#0f172a" stroke-width="1.5"/><text x="56" y="78" font-size="14" font-weight="600" fill="#0f172a">13 cm</text><text x="155" y="78" font-size="14" font-weight="600" fill="#0f172a">13 cm</text><text x="126" y="92" font-size="14" font-weight="700" fill="#1d4ed8">h</text><text x="102" y="160" font-size="14" font-weight="600" fill="#0f172a">10 cm</text></svg>`, options: ["10 cm", "12 cm", "13 cm", "15 cm"], ans: 1, sol: "Half base = 10 ÷ 2 = 5 cm.\nh = √(13² - 5²) = √(169 - 25) = √144 = 12 cm." },
+      { id: "q25", targetClass: "ALL", q: "Round GH₵86,549 to the nearest thousand cedis.", options: ["GH₵86,000", "GH₵86,500", "GH₵87,000", "GH₵90,000"], ans: 2, sol: "Thousands digit is 6; hundreds digit is 5 (round up).\nGH₵87,000." },
+      { id: "q26", targetClass: "ALL", q: "The area of a square tile is 144 cm². Find its perimeter.", options: ["24 cm", "36 cm", "48 cm", "56 cm"], ans: 2, sol: "Side = √144 = 12 cm.\nPerimeter = 4 × 12 = 48 cm." },
+      { id: "q27", targetClass: "ALL", q: "A cube has side 7 cm. Find its total surface area.", options: ["196 cm²", "294 cm²", "343 cm²", "392 cm²"], ans: 1, sol: "TSA = 6s² = 6 × 7² = 6 × 49 = 294 cm²." },
+      { id: "q28", targetClass: "ALL", q: "Use the diagram to find y.", svg: `<svg width="240" height="135" viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg"><polygon points="45,25 225,75 45,125" fill="none" stroke="#0f172a" stroke-width="2.5"/><text x="30" y="25" font-size="14" font-weight="700" fill="#0f172a">A</text><text x="232" y="80" font-size="14" font-weight="700" fill="#0f172a">B</text><text x="30" y="132" font-size="14" font-weight="700" fill="#0f172a">C</text><text x="53" y="52" font-size="14" font-weight="700" fill="#1d4ed8">y°</text><text x="53" y="110" font-size="14" font-weight="600" fill="#0f172a">52°</text><text x="165" y="79" font-size="14" font-weight="600" fill="#0f172a">31°</text></svg>`, options: ["83°", "97°", "101°", "128°"], ans: 1, sol: "y° + 52° + 31° = 180°\ny = 180° - 83° = 97°." },
+      { id: "q29", targetClass: "ALL", q: "Given 4p : 12 = 5 : 15, find p.", options: ["1", "2", "3", "4"], ans: 0, sol: "4p / 12 = 5 / 15\np / 3 = 1 / 3 → p = 1." },
+      { id: "q30", targetClass: "ALL", q: "Translate \"five times a number decreased by 12\" into an algebraic expression.", options: ["5x + 12", "5x - 12", "12x - 5", "5 - 12x"], ans: 1, sol: "5 times x minus 12 = 5x - 12." },
+      { id: "q31", targetClass: "ALL", q: "A fair die is tossed once. Find the probability of obtaining an odd prime number.", options: ["1/6", "1/3", "1/2", "2/3"], ans: 1, sol: "Odd primes on a die: {3, 5} (2 outcomes out of 6).\nProbability = 2/6 = 1/3." },
+      { id: "q32", targetClass: "ALL", q: "A learner scores 54 out of 60 marks. Express the score as a percentage.", options: ["80%", "85%", "90%", "95%"], ans: 2, sol: "(54 / 60) × 100% = (9/10) × 100% = 90%." },
+      { id: "q33", targetClass: "ALL", q: "Find the equation of a line with gradient 2 and y-intercept -5.", options: ["y = 2x - 5", "y = -2x - 5", "y = 5x + 2", "y = 2x + 5"], ans: 0, sol: "y = mx + c → y = 2x - 5." },
+      { id: "q34", targetClass: "ALL", q: "Solve the inequality 3(2x - 1) - 4x > 5.", options: ["x > 4", "x < 4", "x > 1", "x < 1"], ans: 0, sol: "6x - 3 - 4x > 5\n2x > 8\nx > 4." },
+      { id: "q35", targetClass: "ALL", q: "The number line represents which inequality?", svg: `<svg width="300" height="70" viewBox="0 0 320 75" xmlns="http://www.w3.org/2000/svg"><line x1="20" y1="45" x2="300" y2="45" stroke="#0f172a" stroke-width="2"/><polygon points="15,45 25,40 25,50" fill="#0f172a"/><polygon points="305,45 295,40 295,50" fill="#0f172a"/><g font-size="12" text-anchor="middle" fill="#0f172a"><line x1="40" y1="40" x2="40" y2="50" stroke="#0f172a"/><text x="40" y="65">-4</text><line x1="70" y1="40" x2="70" y2="50" stroke="#0f172a"/><text x="70" y="65">-3</text><line x1="100" y1="40" x2="100" y2="50" stroke="#0f172a"/><text x="100" y="65">-2</text><line x1="130" y1="40" x2="130" y2="50" stroke="#0f172a"/><text x="130" y="65">-1</text><line x1="160" y1="40" x2="160" y2="50" stroke="#0f172a"/><text x="160" y="65">0</text><line x1="190" y1="40" x2="190" y2="50" stroke="#0f172a"/><text x="190" y="65">1</text><line x1="220" y1="40" x2="220" y2="50" stroke="#0f172a"/><text x="220" y="65">2</text><line x1="250" y1="40" x2="250" y2="50" stroke="#0f172a"/><text x="250" y="65">3</text><line x1="280" y1="40" x2="280" y2="50" stroke="#0f172a"/><text x="280" y="65">4</text></g><line x1="214" y1="22" x2="25" y2="22" stroke="#1d4ed8" stroke-width="3"/><polygon points="18,22 30,16 30,28" fill="#1d4ed8"/><circle cx="220" cy="22" r="6" fill="#ffffff" stroke="#1d4ed8" stroke-width="3"/></svg>`, options: ["x < 2", "x ≤ 2", "x > 2", "x ≥ 2"], ans: 0, sol: "Open circle at 2 (excluded) and arrow pointing left (< 2) → x < 2." },
+      { id: "q36", targetClass: "ALL", q: "Round 7,846,391 to the nearest ten thousand.", options: ["7,840,000", "7,846,000", "7,850,000", "7,900,000"], ans: 2, sol: "Ten-thousands digit is 4; thousands digit is 6 (round up) → 7,850,000." },
+      { id: "q37", targetClass: "ALL", q: "A triangle has an area of 72 cm² and a perpendicular height of 12 cm. Find its base.", options: ["6 cm", "10 cm", "12 cm", "14 cm"], ans: 2, sol: "72 = (1/2) × b × 12 → 72 = 6b → b = 12 cm." },
+      { id: "q38", targetClass: "ALL", q: "A line has equation y = -3x + 8. Which ordered pair lies on the line?", options: ["(2, 2)", "(1, 6)", "(0, 3)", "(3, 2)"], ans: 0, sol: "Test (2, 2): y = -3(2) + 8 = -6 + 8 = 2. Matches!" },
+      { id: "q39", targetClass: "ALL", q: "Under the mapping x → 3x - 4, find the image of 9.", options: ["19", "21", "23", "27"], ans: 2, sol: "3(9) - 4 = 27 - 4 = 23." },
+      { id: "q40", targetClass: "ALL", q: "Find the LCM of 12, 15 and 20.", options: ["40", "50", "60", "120"], ans: 2, sol: "12 = 2²×3, 15 = 3×5, 20 = 2²×5.\nLCM = 2² × 3 × 5 = 60." }
     ];
 
     function getDefaultState() {
       return {
-        classes: ["JHS 3A", "JHS 3B"],
+        classes: ["Basic 8", "Basic 9"],
         users: [
-          { id: "u1", name: "Akosua Mensah", role: "student", code: "JHS 3A", active: true },
-          { id: "t1", name: "Mr. Samuel Tetteh", role: "teacher", code: "TCH-001", password: "", active: true },
-          { id: "t2", name: "Ms. Linda Owusu", role: "teacher", code: "TCH-002", password: "", active: true }
+          { id: "t1", name: "Mr. Samuel Tetteh", role: "teacher", code: "TCH-001", assignedClasses: ["Basic 8"], passwordHash: "", active: true },
+          { id: "t2", name: "Ms. Linda Owusu", role: "teacher", code: "TCH-002", assignedClasses: ["Basic 9"], passwordHash: "", active: true }
         ],
         questions: JSON.parse(JSON.stringify(defaultQuestions)),
         submissions: [],
         announcements: [
-          { id: "n1", text: "Welcome to GBAT Nov 2026 Mock Prep! Review every worked solution whenever you miss a question.", author: "Mr. Samuel Tetteh", date: "17/11/2026" }
+          { id: "n1", targetClass: "ALL", text: "Welcome to GBAT Nov 2026 Mock Prep! Review every worked solution whenever you miss a question.", author: "Principal Admin", date: "17/11/2026" }
         ],
         settings: {
           quizOpen: true,
+          rosterLock: true,
+          maxExamAttempts: 1,
+          antiCheat: true,
           examMinutes: 45,
           shuffleMode: "both",
           teacherPass: "teacher123",
-          adminPass: "admin123"
+          adminPass: "admin123",
+          teacherPassHash: "",
+          adminPassHash: ""
         },
         logs: [
-          { time: new Date().toLocaleString(), actor: "Principal Admin", action: "Initialized Cloud GBAT Portal" }
+          { time: new Date().toLocaleString(), actor: "Principal Admin", action: "Initialized Hardened Cloud GBAT Portal" }
         ]
       };
     }
@@ -1101,17 +1240,32 @@
     let activeQuiz = null;
     let reviewSubmission = null;
     let showMissedOnly = false;
+    let editingTeacherId = null;
 
-    function saveState() {
+    /* ---------------- GRANULAR FIREBASE PERSISTENCE ---------------- */
+    function markSynced() {
+      syncBadge.textContent = "● Cloud Synced";
+      syncBadge.classList.add("synced");
+    }
+
+    function saveBranch(branchName, payload) {
       syncBadge.classList.remove("synced");
       syncBadge.textContent = "Saving...";
-      set(stateRef, state)
-        .then(() => {
-          syncBadge.textContent = "● Cloud Synced";
-          syncBadge.classList.add("synced");
-        })
+      return set(ref(db, `${ROOT_PATH}/${branchName}`), payload)
+        .then(markSynced)
         .catch(err => {
-          console.error("Cloud save failed:", err);
+          console.error(`Failed saving ${branchName}:`, err);
+          syncBadge.textContent = "⚠ Sync Error";
+        });
+    }
+
+    function pushSubmission(subObj) {
+      syncBadge.classList.remove("synced");
+      syncBadge.textContent = "Saving...";
+      return push(ref(db, `${ROOT_PATH}/submissions`), subObj)
+        .then(markSynced)
+        .catch(err => {
+          console.error("Failed pushing submission:", err);
           syncBadge.textContent = "⚠ Sync Error";
         });
     }
@@ -1119,39 +1273,68 @@
     function addLog(actor, action) {
       state.logs.unshift({ time: new Date().toLocaleString(), actor, action });
       if (state.logs.length > 60) state.logs.pop();
-      saveState();
+      saveBranch("logs", state.logs);
     }
 
-    onValue(stateRef, (snapshot) => {
+    onValue(rootRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const loadedQuestions = (data.questions || defaultQuestions).map((q, idx) => ({
+        const loadedQuestions = (Array.isArray(data.questions) ? data.questions : Object.values(data.questions || defaultQuestions)).map((q, idx) => ({
           ...q,
-          id: q.id || `q_legacy_${idx}`
+          id: q.id || `q_legacy_${idx}`,
+          targetClass: q.targetClass || "ALL"
         }));
+
+        const rawUsers = Array.isArray(data.users) ? data.users : Object.values(data.users || {});
+        const loadedUsers = rawUsers.map(u => ({
+          ...u,
+          assignedClasses: u.role === "teacher"
+            ? (Array.isArray(u.assignedClasses) ? u.assignedClasses : [])
+            : undefined
+        }));
+
+        let loadedSubs = [];
+        if (Array.isArray(data.submissions)) {
+          loadedSubs = data.submissions.filter(Boolean);
+        } else if (data.submissions && typeof data.submissions === "object") {
+          loadedSubs = Object.entries(data.submissions).map(([fbKey, val]) => ({ fbKey, ...val }));
+        }
+
+        const loadedNotices = (Array.isArray(data.announcements) ? data.announcements : Object.values(data.announcements || {})).map(n => ({
+          ...n,
+          targetClass: n.targetClass || "ALL"
+        }));
+
         state = {
-          classes: Array.isArray(data.classes) && data.classes.length ? data.classes : ["JHS 3A", "JHS 3B"],
-          users: data.users || [],
+          classes: Array.isArray(data.classes) && data.classes.length ? data.classes : ["Basic 8", "Basic 9"],
+          users: loadedUsers,
           questions: loadedQuestions,
-          submissions: data.submissions || [],
-          announcements: data.announcements || [],
+          submissions: loadedSubs,
+          announcements: loadedNotices,
           settings: {
             quizOpen: true,
+            rosterLock: true,
+            maxExamAttempts: 1,
+            antiCheat: true,
             examMinutes: 45,
             shuffleMode: "both",
             teacherPass: "teacher123",
             adminPass: "admin123",
+            teacherPassHash: "",
+            adminPassHash: "",
             ...(data.settings || {})
           },
-          logs: data.logs || []
+          logs: Array.isArray(data.logs) ? data.logs : []
         };
-        syncBadge.textContent = "● Cloud Synced";
-        syncBadge.classList.add("synced");
+        markSynced();
       } else {
         state = getDefaultState();
-        saveState();
+        set(rootRef, state).then(markSynced);
       }
+
       populateDropdowns();
+      updateRosterLoginHint();
+
       if (session && !activeQuiz) {
         if (session.role === "student" && !document.getElementById("studentDashboard").classList.contains("hidden")) renderStudentDashboard();
         if (session.role === "teacher" && !document.getElementById("teacherDashboard").classList.contains("hidden")) renderTeacherDashboard();
@@ -1177,6 +1360,18 @@
       });
     }
 
+    function updateRosterLoginHint() {
+      const hint = document.getElementById("stuRosterHint");
+      const studentCount = state.users.filter(u => u.role === "student").length;
+      if (state.settings.rosterLock) {
+        hint.textContent = studentCount
+          ? `🔒 Strict Roster Mode: Enter your registered full name (${studentCount} students enrolled) and matching class.`
+          : "🔒 Strict Roster Mode is ON. Ask Admin to upload the student Excel roster first.";
+      } else {
+        hint.textContent = "Open Registration Mode: Enter your full name and select your class.";
+      }
+    }
+
     /* ---------------- DROPDOWNS & ROLE SWITCHING ---------------- */
     function populateDropdowns() {
       const tSel = document.getElementById("teacherSelect");
@@ -1185,7 +1380,8 @@
       state.users.filter(u => u.role === "teacher").forEach(t => {
         const opt = document.createElement("option");
         opt.value = t.id;
-        opt.textContent = `${t.name} (${t.code})`;
+        const clsTag = (t.assignedClasses && t.assignedClasses.length) ? ` — [${t.assignedClasses.join(", ")}]` : " — [No Classes]";
+        opt.textContent = `${t.name} (${t.code})${clsTag}`;
         tSel.appendChild(opt);
       });
       if (curT) tSel.value = curT;
@@ -1208,7 +1404,6 @@
         if (curStuCls && state.classes.includes(curStuCls)) stuCls.value = curStuCls;
       }
 
-      // Student autocomplete datalist from Excel-imported students
       const dl = document.getElementById("registeredStudentsList");
       dl.innerHTML = "";
       state.users.filter(u => u.role === "student" && u.active).forEach(s => {
@@ -1228,22 +1423,24 @@
       });
       if (curAdmCls && state.classes.includes(curAdmCls)) admCls.value = curAdmCls;
 
-      const tFilter = document.getElementById("tClassFilter");
-      const curFilter = tFilter.value;
-      tFilter.innerHTML = '<option value="">All Classes</option>';
+      const boxWrap = document.getElementById("aNewTeacherClassCheckboxes");
+      const previouslyChecked = Array.from(boxWrap.querySelectorAll("input:checked")).map(i => i.value);
+      boxWrap.innerHTML = "";
       state.classes.forEach(cls => {
-        const opt = document.createElement("option");
-        opt.value = cls;
-        opt.textContent = cls;
-        tFilter.appendChild(opt);
+        const lbl = document.createElement("label");
+        lbl.className = "checkbox-pill";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.value = cls;
+        if (previouslyChecked.includes(cls)) cb.checked = true;
+        lbl.append(cb, document.createTextNode(cls));
+        boxWrap.appendChild(lbl);
       });
-      if (curFilter) tFilter.value = curFilter;
     }
 
-    // Auto-select class when student picks their pre-uploaded name
     document.getElementById("stuNameInput").addEventListener("input", (e) => {
-      const val = e.target.value.trim().toLowerCase();
-      const match = state.users.find(u => u.role === "student" && u.name.toLowerCase() === val);
+      const val = normalizeName(e.target.value).toLowerCase();
+      const match = state.users.find(u => u.role === "student" && normalizeName(u.name).toLowerCase() === val);
       if (match && state.classes.includes(match.code)) {
         document.getElementById("stuClassSelect").value = match.code;
       }
@@ -1269,57 +1466,106 @@
       document.getElementById("logoutBtn").classList.remove("hidden");
     }
 
+    /* ---------------- AUTHENTICATION HANDLERS ---------------- */
     document.getElementById("stuLoginBtn").onclick = () => {
-      const name = document.getElementById("stuNameInput").value.trim();
+      const name = normalizeName(document.getElementById("stuNameInput").value);
       const studentClass = document.getElementById("stuClassSelect").value;
+      const errEl = document.getElementById("loginError");
+      errEl.textContent = "";
+
       if (!name) {
-        document.getElementById("loginError").textContent = "Please enter your full name.";
+        errEl.textContent = "Please enter your full name.";
         return;
       }
       if (!studentClass) {
-        document.getElementById("loginError").textContent = "Please select your class (or ask Admin to create classes first).";
+        errEl.textContent = "Please select your class.";
         return;
       }
-      const existing = state.users.find(u => u.role === "student" && u.name.toLowerCase() === name.toLowerCase());
-      if (existing && !existing.active) {
-        document.getElementById("loginError").textContent = "This student account is currently suspended by Admin.";
+
+      const existing = state.users.find(u => u.role === "student" && normalizeName(u.name).toLowerCase() === name.toLowerCase());
+
+      if (state.settings.rosterLock && !existing) {
+        errEl.textContent = "Name not found on the official class roster. Check spelling or contact your teacher/admin.";
         return;
       }
+
+      if (existing) {
+        if (!existing.active) {
+          errEl.textContent = "This student account is currently suspended by the Administrator.";
+          return;
+        }
+        if (existing.code && existing.code !== studentClass) {
+          errEl.textContent = `Class mismatch: ${existing.name} is registered under ${existing.code}, not ${studentClass}.`;
+          return;
+        }
+      }
+
       let userId;
       if (!existing) {
         userId = "u" + Date.now();
         state.users.push({ id: userId, name, role: "student", code: studentClass, active: true });
+        saveBranch("users", state.users);
       } else {
         userId = existing.id;
-        existing.code = studentClass;
       }
-      session = { id: userId, role: "student", name, code: studentClass };
-      addLog(name, `Logged into Student Dashboard (${studentClass})`);
+
+      session = { id: userId, role: "student", name: existing ? existing.name : name, code: studentClass };
+      addLog(session.name, `Signed into Student Dashboard (${studentClass})`);
       setNavSession();
+
+      const savedExam = loadSavedExamState(session.name, session.code);
+      if (savedExam) {
+        showToast("Resuming your in-progress timed exam!", "info");
+        resumeExamFromStorage(savedExam);
+        return;
+      }
+
       renderStudentDashboard();
       showScreen("studentDashboard");
-      showToast(`Welcome, ${name}!`, "success");
+      showToast(`Welcome, ${session.name}!`, "success");
     };
 
-    document.getElementById("teacherLoginBtn").onclick = () => {
+    async function verifyPassword(plainInput, storedHash, fallbackPlain) {
+      if (storedHash) {
+        const inputHash = await sha256(plainInput);
+        return inputHash === storedHash;
+      }
+      return plainInput === fallbackPlain;
+    }
+
+    document.getElementById("teacherLoginBtn").onclick = async () => {
       const pass = document.getElementById("teacherPassInput").value;
       const tid = document.getElementById("teacherSelect").value;
       const teacher = state.users.find(u => u.id === tid);
+      const errEl = document.getElementById("loginError");
+      errEl.textContent = "";
+
       if (!teacher) {
-        document.getElementById("loginError").textContent = "Please select a valid teacher account.";
+        errEl.textContent = "Please select a valid teacher account.";
         return;
       }
       if (!teacher.active) {
-        document.getElementById("loginError").textContent = "This teacher account is suspended.";
+        errEl.textContent = "This teacher account is suspended.";
         return;
       }
-      const expectedPass = teacher.password ? teacher.password : (state.settings.teacherPass || "teacher123");
-      if (pass !== expectedPass) {
-        document.getElementById("loginError").textContent = "Invalid teacher password.";
+
+      const valid = teacher.passwordHash
+        ? await verifyPassword(pass, teacher.passwordHash, "")
+        : await verifyPassword(pass, state.settings.teacherPassHash, state.settings.teacherPass || "teacher123");
+
+      if (!valid) {
+        errEl.textContent = "Invalid teacher password.";
         return;
       }
+
       document.getElementById("teacherPassInput").value = "";
-      session = { id: teacher.id, role: "teacher", name: teacher.name, code: teacher.code };
+      session = {
+        id: teacher.id,
+        role: "teacher",
+        name: teacher.name,
+        code: teacher.code,
+        assignedClasses: Array.isArray(teacher.assignedClasses) ? teacher.assignedClasses : []
+      };
       addLog(teacher.name, "Logged into Teacher Dashboard");
       setNavSession();
       renderTeacherDashboard();
@@ -1327,11 +1573,14 @@
       showToast(`Signed in as ${teacher.name}`, "success");
     };
 
-    document.getElementById("adminLoginBtn").onclick = () => {
+    document.getElementById("adminLoginBtn").onclick = async () => {
       const pass = document.getElementById("adminPassInput").value;
-      const expectedAdminPass = state.settings.adminPass || "admin123";
-      if (pass !== expectedAdminPass) {
-        document.getElementById("loginError").textContent = "Invalid admin password.";
+      const errEl = document.getElementById("loginError");
+      errEl.textContent = "";
+
+      const valid = await verifyPassword(pass, state.settings.adminPassHash, state.settings.adminPass || "admin123");
+      if (!valid) {
+        errEl.textContent = "Invalid admin password.";
         return;
       }
       document.getElementById("adminPassInput").value = "";
@@ -1347,48 +1596,80 @@
       if (activeQuiz && activeQuiz.timer) clearInterval(activeQuiz.timer);
       session = null;
       activeQuiz = null;
-      ["navRole", "navUser", "navTimer", "logoutBtn"].forEach(id => document.getElementById(id).classList.add("hidden"));
+      ["navRole", "navUser", "navTimer", "navTabWarn", "logoutBtn"].forEach(id => document.getElementById(id).classList.add("hidden"));
       document.getElementById("loginError").textContent = "";
       populateDropdowns();
       showScreen("loginScreen");
     };
 
     /* ---------------- STUDENT DASHBOARD ---------------- */
+    function getQuestionsForClass(studentClass) {
+      return state.questions.filter(q => !q.targetClass || q.targetClass === "ALL" || q.targetClass === studentClass);
+    }
+
     function renderStudentDashboard() {
       document.getElementById("stuWelcome").textContent = `Welcome, ${session.name}`;
       document.getElementById("stuMeta").textContent = `Class: ${session.code} • GBAT Mathematics Mock`;
 
-      const mine = state.submissions.filter(s => s.studentName.toLowerCase() === session.name.toLowerCase());
+      const mine = state.submissions.filter(s =>
+        normalizeName(s.studentName).toLowerCase() === session.name.toLowerCase() &&
+        (s.studentClass || s.indexNumber) === session.code
+      );
+      const examAttempts = mine.filter(s => s.mode === "Exam");
+      const maxExams = Number(state.settings.maxExamAttempts ?? 1);
+
       const avg = mine.length ? Math.round(mine.reduce((a, b) => a + b.pct, 0) / mine.length) : 0;
       const best = mine.length ? Math.max(...mine.map(s => s.pct)) : 0;
+      const classQs = getQuestionsForClass(session.code);
 
-      document.getElementById("stuKpiAttempts").textContent = mine.length;
+      document.getElementById("stuKpiAttempts").textContent = maxExams > 0 ? `${examAttempts.length} / ${maxExams}` : `${examAttempts.length}`;
       document.getElementById("stuKpiAvg").textContent = `${avg}%`;
       document.getElementById("stuKpiBest").textContent = `${best}%`;
-      document.getElementById("stuKpiQs").textContent = state.questions.length;
+      document.getElementById("stuKpiQsLabel").textContent = `${session.code} Questions`;
+      document.getElementById("stuKpiQs").textContent = classQs.length;
 
+      const relevantNotices = state.announcements.filter(a => !a.targetClass || a.targetClass === "ALL" || a.targetClass === session.code);
       const annBox = document.getElementById("stuAnnouncements");
       annBox.innerHTML = "";
-      if (!state.announcements.length) {
-        annBox.textContent = "No announcements yet.";
+      if (!relevantNotices.length) {
+        annBox.textContent = "No announcements for your class yet.";
       } else {
-        state.announcements.forEach(a => {
+        relevantNotices.forEach(a => {
           const d = document.createElement("div");
           d.className = "notice";
           const p = document.createElement("div");
           p.textContent = a.text;
           const m = document.createElement("div");
           m.className = "notice-meta";
-          m.textContent = `Posted by ${a.author} • ${a.date}`;
+          m.textContent = `Posted by ${a.author} (${a.targetClass === "ALL" ? "All Classes" : a.targetClass}) • ${a.date}`;
           d.append(p, m);
           annBox.appendChild(d);
         });
       }
 
+      document.getElementById("stuQuizTitle").textContent = `${session.code} — GBAT Mathematics Assessment`;
       document.getElementById("stuQuizDesc").textContent =
-        `Total Questions: ${state.questions.length} | Exam Duration: ${state.settings.examMinutes} minutes. Every attempt shuffles questions and options; wrong answers show step-by-step worked solutions.`;
-      document.getElementById("stuQuizControls").classList.toggle("hidden", !state.settings.quizOpen);
-      document.getElementById("stuQuizClosedMsg").classList.toggle("hidden", state.settings.quizOpen);
+        `Assigned Questions for ${session.code}: ${classQs.length} | Exam Duration: ${state.settings.examMinutes} minutes. Every attempt shuffles questions and choices; wrong answers show step-by-step worked solutions.`;
+
+      const isOpen = state.settings.quizOpen && classQs.length > 0;
+      document.getElementById("stuQuizControls").classList.toggle("hidden", !isOpen);
+      document.getElementById("stuQuizClosedMsg").classList.toggle("hidden", isOpen);
+      if (!classQs.length && state.settings.quizOpen) {
+        document.getElementById("stuQuizClosedMsg").textContent = `No questions have been assigned to ${session.code} yet.`;
+      } else {
+        document.getElementById("stuQuizClosedMsg").textContent = "This assessment is currently closed by the Administrator.";
+      }
+
+      const examBtn = document.getElementById("startTimedBtn");
+      const limitMsg = document.getElementById("stuExamLimitMsg");
+      if (maxExams > 0 && examAttempts.length >= maxExams) {
+        examBtn.disabled = true;
+        limitMsg.classList.remove("hidden");
+        limitMsg.textContent = `You have used all ${maxExams} official Exam Mode attempt(s). You may still use Practice Mode for revision.`;
+      } else {
+        examBtn.disabled = false;
+        limitMsg.classList.add("hidden");
+      }
 
       const tbody = document.getElementById("stuHistoryBody");
       tbody.innerHTML = "";
@@ -1422,10 +1703,11 @@
     document.getElementById("startPracticeBtn").onclick = () => startQuiz("Practice");
     document.getElementById("startTimedBtn").onclick = () => startQuiz("Exam");
 
-    /* ---------------- QUIZ ENGINE (WITH FULL SHUFFLE & INTERACTIVITY) ---------------- */
-    function buildShuffledQuizItems() {
+    /* ---------------- QUIZ ENGINE ---------------- */
+    function buildShuffledQuizItems(studentClass) {
       const mode = state.settings.shuffleMode || "both";
-      const indexed = state.questions.map((q, origIdx) => ({ q, origIdx }));
+      const pool = getQuestionsForClass(studentClass);
+      const indexed = pool.map((q, idx) => ({ q, origIdx: idx }));
       const ordered = (mode === "both" || mode === "questions") ? fisherYatesShuffle(indexed) : indexed;
 
       return ordered.map(({ q, origIdx }) => {
@@ -1435,6 +1717,7 @@
         return {
           origIdx,
           qId: q.id || `q_${origIdx}`,
+          targetClass: q.targetClass || "ALL",
           q: q.q,
           svg: q.svg || "",
           options: finalPairs.map(p => p.text),
@@ -1444,8 +1727,44 @@
       });
     }
 
+    function persistExamState() {
+      if (!activeQuiz || activeQuiz.mode !== "Exam" || !session) return;
+      const payload = {
+        studentName: session.name,
+        studentClass: session.code,
+        items: activeQuiz.items,
+        current: activeQuiz.current,
+        answers: activeQuiz.answers,
+        flagged: activeQuiz.flagged,
+        streak: activeQuiz.streak,
+        tabSwitches: activeQuiz.tabSwitches,
+        endTimestamp: activeQuiz.endTimestamp
+      };
+      localStorage.setItem(EXAM_STORAGE_KEY, JSON.stringify(payload));
+    }
+
+    function loadSavedExamState(studentName, studentClass) {
+      try {
+        const raw = localStorage.getItem(EXAM_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (
+          parsed.studentName.toLowerCase() === studentName.toLowerCase() &&
+          parsed.studentClass === studentClass &&
+          parsed.endTimestamp > Date.now()
+        ) {
+          return parsed;
+        }
+        localStorage.removeItem(EXAM_STORAGE_KEY);
+      } catch (e) {}
+      return null;
+    }
+
     function startQuiz(mode) {
-      const items = buildShuffledQuizItems();
+      const items = buildShuffledQuizItems(session.code);
+      if (!items.length) return alert("No questions available for your class.");
+
+      const durationMs = state.settings.examMinutes * 60 * 1000;
       activeQuiz = {
         mode,
         items,
@@ -1453,27 +1772,72 @@
         answers: new Array(items.length).fill(null),
         flagged: new Array(items.length).fill(false),
         streak: 0,
-        secondsLeft: state.settings.examMinutes * 60,
+        tabSwitches: 0,
+        endTimestamp: Date.now() + durationMs,
         timer: null
       };
+
       if (mode === "Exam") {
-        const navTimer = document.getElementById("navTimer");
-        navTimer.classList.remove("hidden");
-        const tick = () => {
-          const m = String(Math.floor(activeQuiz.secondsLeft / 60)).padStart(2, "0");
-          const s = String(activeQuiz.secondsLeft % 60).padStart(2, "0");
-          navTimer.textContent = `⏱ ${m}:${s}`;
-        };
-        tick();
-        activeQuiz.timer = setInterval(() => {
-          activeQuiz.secondsLeft--;
-          tick();
-          if (activeQuiz.secondsLeft <= 0) submitQuiz();
-        }, 1000);
+        persistExamState();
+        startExamCountdown();
       }
       showScreen("quizScreen");
       renderQuizQuestion(true);
     }
+
+    function resumeExamFromStorage(saved) {
+      activeQuiz = {
+        mode: "Exam",
+        items: saved.items,
+        current: saved.current || 0,
+        answers: saved.answers,
+        flagged: saved.flagged || new Array(saved.items.length).fill(false),
+        streak: saved.streak || 0,
+        tabSwitches: saved.tabSwitches || 0,
+        endTimestamp: saved.endTimestamp,
+        timer: null
+      };
+      startExamCountdown();
+      showScreen("quizScreen");
+      renderQuizQuestion(true);
+    }
+
+    function startExamCountdown() {
+      const navTimer = document.getElementById("navTimer");
+      const navWarn = document.getElementById("navTabWarn");
+      navTimer.classList.remove("hidden");
+      if (state.settings.antiCheat) {
+        navWarn.classList.remove("hidden");
+        navWarn.textContent = `⚠ Tab Switches: ${activeQuiz.tabSwitches}/3`;
+      }
+
+      const tick = () => {
+        if (!activeQuiz) return;
+        const remainingSec = Math.max(0, Math.ceil((activeQuiz.endTimestamp - Date.now()) / 1000));
+        const m = String(Math.floor(remainingSec / 60)).padStart(2, "0");
+        const s = String(remainingSec % 60).padStart(2, "0");
+        navTimer.textContent = `⏱ ${m}:${s}`;
+        if (remainingSec <= 0) submitQuiz(true);
+      };
+      tick();
+      activeQuiz.timer = setInterval(tick, 1000);
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (!activeQuiz || activeQuiz.mode !== "Exam" || !state.settings.antiCheat) return;
+      if (document.hidden) {
+        activeQuiz.tabSwitches++;
+        persistExamState();
+        const navWarn = document.getElementById("navTabWarn");
+        navWarn.textContent = `⚠ Tab Switches: ${activeQuiz.tabSwitches}/3`;
+        if (activeQuiz.tabSwitches >= 3) {
+          addLog(session.name, `Auto-submitted Exam Mode after 3 tab switches (${session.code})`);
+          submitQuiz(true);
+        } else {
+          showToast(`Warning (${activeQuiz.tabSwitches}/3): Leaving the exam tab is logged!`, "error");
+        }
+      }
+    });
 
     function renderQuizQuestion(animateCard = false) {
       const qs = activeQuiz.items;
@@ -1569,7 +1933,7 @@
         if (activeQuiz.answers[qIdx] !== null) {
           dot.classList.add(activeQuiz.answers[qIdx] === q.ans ? "p-correct" : "p-wrong");
         }
-        dot.onclick = () => { activeQuiz.current = qIdx; renderQuizQuestion(true); };
+        dot.onclick = () => { activeQuiz.current = qIdx; persistExamState(); renderQuizQuestion(true); };
         grid.appendChild(dot);
       });
 
@@ -1587,6 +1951,7 @@
       } else {
         activeQuiz.streak = 0;
       }
+      persistExamState();
       renderQuizQuestion(false);
     }
 
@@ -1594,19 +1959,19 @@
       if (!activeQuiz) return;
       const idx = activeQuiz.current;
       activeQuiz.flagged[idx] = !activeQuiz.flagged[idx];
+      persistExamState();
       renderQuizQuestion(false);
     };
 
     document.getElementById("prevBtn").onclick = () => {
-      if (activeQuiz.current > 0) { activeQuiz.current--; renderQuizQuestion(true); }
+      if (activeQuiz.current > 0) { activeQuiz.current--; persistExamState(); renderQuizQuestion(true); }
     };
     document.getElementById("nextBtn").onclick = () => {
-      if (activeQuiz.current < activeQuiz.items.length - 1) { activeQuiz.current++; renderQuizQuestion(true); }
-      else submitQuiz();
+      if (activeQuiz.current < activeQuiz.items.length - 1) { activeQuiz.current++; persistExamState(); renderQuizQuestion(true); }
+      else submitQuiz(false);
     };
-    document.getElementById("finishEarlyBtn").onclick = submitQuiz;
+    document.getElementById("finishEarlyBtn").onclick = () => submitQuiz(false);
 
-    // Keyboard shortcuts during quiz
     document.addEventListener("keydown", (e) => {
       if (!activeQuiz || document.getElementById("quizScreen").classList.contains("hidden")) return;
       const key = e.key.toUpperCase();
@@ -1616,16 +1981,18 @@
       if (e.key === "ArrowLeft") document.getElementById("prevBtn").click();
     });
 
-    function submitQuiz() {
+    function submitQuiz(forced = false) {
+      if (!activeQuiz) return;
       if (activeQuiz.timer) clearInterval(activeQuiz.timer);
       document.getElementById("navTimer").classList.add("hidden");
+      document.getElementById("navTabWarn").classList.add("hidden");
+      localStorage.removeItem(EXAM_STORAGE_KEY);
 
       const items = activeQuiz.items;
       const total = items.length;
       const score = activeQuiz.answers.filter((a, i) => a === items[i].ans).length;
       const pct = Math.round((score / total) * 100);
 
-      // Detailed item records so shuffled attempts map cleanly to analytics & review
       const itemRecords = items.map((item, i) => {
         const chosen = activeQuiz.answers[i];
         return {
@@ -1647,11 +2014,14 @@
         score,
         total,
         pct,
+        tabSwitches: activeQuiz.tabSwitches || 0,
+        forcedSubmit: forced,
         date: new Date().toLocaleString(),
         itemRecords
       };
-      state.submissions.push(sub);
-      addLog(session.name, `Completed ${activeQuiz.mode} Mode quiz (${session.code} • ${score}/${total} • ${pct}%)`);
+
+      pushSubmission(sub);
+      addLog(session.name, `Submitted ${activeQuiz.mode} Mode (${session.code} • ${score}/${total} • ${pct}%)`);
       activeQuiz = null;
       openResultView(sub, true);
     }
@@ -1700,37 +2070,7 @@
           }
           list.appendChild(div);
         });
-        return;
       }
-
-      // Legacy fallback
-      state.questions.forEach((item, idx) => {
-        const chosen = reviewSubmission.answers ? reviewSubmission.answers[idx] : null;
-        const ok = chosen === item.ans;
-        if (showMissedOnly && ok) return;
-
-        const div = document.createElement("div");
-        div.className = `review-item ${ok ? "passed" : "missed"}`;
-        const qt = document.createElement("div");
-        qt.style.fontWeight = "700";
-        qt.textContent = `Q${idx + 1}. ${item.q}`;
-        const st = document.createElement("div");
-        st.style.fontSize = "0.9rem";
-        st.style.margin = "6px 0";
-        const chosenTxt = chosen === null || chosen === undefined ? "Unanswered" : `${letters[chosen]} (${item.options[chosen]})`;
-        st.textContent = `Selected: ${chosenTxt} | Correct: ${letters[item.ans]} (${item.options[item.ans]})`;
-        div.append(qt, st);
-
-        if (!ok) {
-          const sb = document.createElement("div");
-          sb.className = "solution-box";
-          const b = document.createElement("strong");
-          b.textContent = "Step-by-Step Solution:\n";
-          sb.append(b, document.createTextNode(item.sol));
-          div.appendChild(sb);
-        }
-        list.appendChild(div);
-      });
     }
 
     document.getElementById("resMissedBtn").onclick = () => {
@@ -1743,7 +2083,7 @@
       else { renderStudentDashboard(); showScreen("studentDashboard"); }
     };
 
-    /* ---------------- TEACHER DASHBOARD ---------------- */
+    /* ---------------- TEACHER DASHBOARD (SCOPED TO ASSIGNED CLASSES) ---------------- */
     document.querySelectorAll("#teacherTabs .sub-tab").forEach(btn => {
       btn.onclick = () => {
         document.querySelectorAll("#teacherTabs .sub-tab").forEach(b => b.classList.remove("active"));
@@ -1754,71 +2094,169 @@
       };
     });
 
+    function getTeacherAssignedClasses() {
+      if (!session || session.role !== "teacher") return [];
+      const liveTeacher = state.users.find(u => u.id === session.id);
+      return liveTeacher && Array.isArray(liveTeacher.assignedClasses) ? liveTeacher.assignedClasses : [];
+    }
+
     function renderTeacherDashboard() {
-      document.getElementById("teacherMeta").textContent = `Signed in as ${session.name} (${session.code})`;
-      const subs = state.submissions;
-      const avg = subs.length ? Math.round(subs.reduce((a, b) => a + b.pct, 0) / subs.length) : 0;
-      const high = subs.length ? Math.max(...subs.map(s => s.pct)) : 0;
+      const assigned = getTeacherAssignedClasses();
+      document.getElementById("teacherMeta").textContent = assigned.length
+        ? `Signed in as ${session.name} (${session.code}) • Assigned Classes: ${assigned.join(", ")}`
+        : `Signed in as ${session.name} (${session.code}) • No classes assigned`;
+
+      document.getElementById("teacherNoClassWarning").classList.toggle("hidden", assigned.length > 0);
+
+      const tClsFilter = document.getElementById("tClassFilter");
+      const curSubFilter = tClsFilter.value;
+      tClsFilter.innerHTML = `<option value="">All My Classes (${assigned.join(", ") || "None"})</option>`;
+      assigned.forEach(c => {
+        const opt = document.createElement("option"); opt.value = c; opt.textContent = c; tClsFilter.appendChild(opt);
+      });
+      if (assigned.includes(curSubFilter)) tClsFilter.value = curSubFilter;
+
+      const tAnaFilter = document.getElementById("tAnalyticsClassFilter");
+      const curAnaFilter = tAnaFilter.value;
+      tAnaFilter.innerHTML = `<option value="">All My Assigned Classes</option>`;
+      assigned.forEach(c => {
+        const opt = document.createElement("option"); opt.value = c; opt.textContent = c; tAnaFilter.appendChild(opt);
+      });
+      if (assigned.includes(curAnaFilter)) tAnaFilter.value = curAnaFilter;
+
+      const newQCls = document.getElementById("newQTargetClass");
+      const curNewQCls = newQCls.value;
+      newQCls.innerHTML = "";
+      assigned.forEach(c => {
+        const opt = document.createElement("option"); opt.value = c; opt.textContent = `${c} Only`; newQCls.appendChild(opt);
+      });
+      if (assigned.length > 1) {
+        const allOpt = document.createElement("option"); allOpt.value = "ALL"; allOpt.textContent = "All Classes (Shared)"; newQCls.appendChild(allOpt);
+      }
+      if (curNewQCls) newQCls.value = curNewQCls;
+
+      const bankFilter = document.getElementById("tBankClassFilter");
+      const curBankFilter = bankFilter.value;
+      bankFilter.innerHTML = `<option value="">All My Classes + Shared</option>`;
+      assigned.forEach(c => {
+        const opt = document.createElement("option"); opt.value = c; opt.textContent = `${c} Questions`; bankFilter.appendChild(opt);
+      });
+      const sharedOpt = document.createElement("option"); sharedOpt.value = "ALL"; sharedOpt.textContent = "Shared (All Classes)"; bankFilter.appendChild(sharedOpt);
+      if (curBankFilter) bankFilter.value = curBankFilter;
+
+      const noticeCls = document.getElementById("newNoticeClass");
+      noticeCls.innerHTML = "";
+      assigned.forEach(c => {
+        const opt = document.createElement("option"); opt.value = c; opt.textContent = c; noticeCls.appendChild(opt);
+      });
+      if (assigned.length > 1) {
+        const opt = document.createElement("option"); opt.value = "ALL"; opt.textContent = "All My Assigned Classes"; noticeCls.appendChild(opt);
+      }
+
+      const myExamSubs = state.submissions.filter(s => {
+        const sClass = s.studentClass || s.indexNumber || "";
+        return assigned.includes(sClass) && s.mode === "Exam";
+      });
+      const avg = myExamSubs.length ? Math.round(myExamSubs.reduce((a, b) => a + b.pct, 0) / myExamSubs.length) : 0;
+      const high = myExamSubs.length ? Math.max(...myExamSubs.map(s => s.pct)) : 0;
+
+      document.getElementById("tKpiSubs").textContent = myExamSubs.length;
+      document.getElementById("tKpiAvg").textContent = `${avg}%`;
+      document.getElementById("tKpiHigh").textContent = `${high}%`;
+
+      renderTeacherAnalytics();
+      renderTeacherSubmissions();
+      renderTeacherQuestions();
+      renderTeacherNotices();
+    }
+
+    function renderTeacherAnalytics() {
+      const assigned = getTeacherAssignedClasses();
+      const selectedCls = document.getElementById("tAnalyticsClassFilter").value;
+      const targetClasses = selectedCls ? [selectedCls] : assigned;
+
+      const scopedExamSubs = state.submissions.filter(s => {
+        const sClass = s.studentClass || s.indexNumber || "";
+        return targetClasses.includes(sClass) && s.mode === "Exam";
+      });
+
+      const relevantQuestions = state.questions.filter(q =>
+        !q.targetClass || q.targetClass === "ALL" || targetClasses.includes(q.targetClass)
+      );
 
       let hardest = "-", lowestAcc = 101;
       const analyticsBody = document.getElementById("tAnalyticsBody");
       analyticsBody.innerHTML = "";
-      state.questions.forEach((q, idx) => {
+
+      relevantQuestions.forEach((q, idx) => {
         let attempts = 0, right = 0;
-        subs.forEach(s => {
+        scopedExamSubs.forEach(s => {
           if (s.itemRecords && s.itemRecords.length) {
             const match = s.itemRecords.find(r => r.qId === q.id || r.q === q.q);
             if (match && match.selectedText !== "Unanswered") {
               attempts++;
               if (match.isCorrect) right++;
             }
-          } else if (s.answers && s.answers[idx] !== null && s.answers[idx] !== undefined) {
-            attempts++;
-            if (s.answers[idx] === q.ans) right++;
           }
         });
         const acc = attempts ? Math.round((right / attempts) * 100) : 0;
         if (attempts && acc < lowestAcc) { lowestAcc = acc; hardest = `Q${idx + 1} (${acc}%)`; }
 
         const tr = document.createElement("tr");
-        [idx + 1, q.q.slice(0, 65) + (q.q.length > 65 ? "..." : ""), attempts, right].forEach(v => {
-          const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
-        });
+        const tdNum = document.createElement("td"); tdNum.textContent = idx + 1;
+        const tdCls = document.createElement("td");
+        const cBadge = document.createElement("span");
+        cBadge.className = "badge b-blue";
+        cBadge.textContent = q.targetClass === "ALL" ? "All Classes" : q.targetClass;
+        tdCls.appendChild(cBadge);
+        const tdQ = document.createElement("td"); tdQ.textContent = q.q.slice(0, 62) + (q.q.length > 62 ? "..." : "");
+        const tdAtt = document.createElement("td"); tdAtt.textContent = attempts;
+        const tdCor = document.createElement("td"); tdCor.textContent = right;
         const tdAcc = document.createElement("td");
         const badge = document.createElement("span");
         badge.className = `badge ${acc >= 70 ? "b-green" : acc >= 45 ? "b-warn" : "b-red"}`;
         badge.textContent = `${acc}%`;
         tdAcc.appendChild(badge);
-        tr.appendChild(tdAcc);
+        tr.append(tdNum, tdCls, tdQ, tdAtt, tdCor, tdAcc);
         analyticsBody.appendChild(tr);
       });
 
-      document.getElementById("tKpiSubs").textContent = subs.length;
-      document.getElementById("tKpiAvg").textContent = `${avg}%`;
-      document.getElementById("tKpiHigh").textContent = `${high}%`;
       document.getElementById("tKpiHard").textContent = hardest;
-
-      renderTeacherSubmissions();
-      renderTeacherQuestions();
-      renderTeacherNotices();
     }
+    document.getElementById("tAnalyticsClassFilter").onchange = renderTeacherAnalytics;
 
     function renderTeacherSubmissions() {
+      const assigned = getTeacherAssignedClasses();
       const q = document.getElementById("tSearchInput").value.trim().toLowerCase();
       const clsFilter = document.getElementById("tClassFilter").value;
+      const modeFilter = document.getElementById("tModeFilter").value;
       const tbody = document.getElementById("tSubsBody");
       tbody.innerHTML = "";
+
       state.submissions.slice().reverse().filter(s => {
         const sClass = s.studentClass || s.indexNumber || "";
+        if (!assigned.includes(sClass)) return false;
         const matchesClass = !clsFilter || sClass === clsFilter;
+        const matchesMode = !modeFilter || s.mode === modeFilter;
         const matchesText = s.studentName.toLowerCase().includes(q) || sClass.toLowerCase().includes(q);
-        return matchesClass && matchesText;
+        return matchesClass && matchesMode && matchesText;
       }).forEach(sub => {
         const tr = document.createElement("tr");
         const sClass = sub.studentClass || sub.indexNumber || "-";
-        [sub.studentName, sClass, sub.mode, `${sub.score}/${sub.total}`, `${sub.pct}%`, sub.date].forEach(v => {
+        [sub.studentName, sClass, sub.mode, `${sub.score}/${sub.total}`, `${sub.pct}%`].forEach(v => {
           const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
         });
+
+        const tdInt = document.createElement("td");
+        const intBadge = document.createElement("span");
+        const switches = sub.tabSwitches || 0;
+        intBadge.className = `badge ${switches === 0 ? "b-green" : "b-red"}`;
+        intBadge.textContent = switches === 0 ? "Clean" : `${switches} Tab Switch`;
+        tdInt.appendChild(intBadge);
+        tr.appendChild(tdInt);
+
+        const tdDate = document.createElement("td"); tdDate.textContent = sub.date; tr.appendChild(tdDate);
+
         const tdAct = document.createElement("td");
         const btn = document.createElement("button");
         btn.className = "btn btn-outline btn-sm";
@@ -1831,14 +2269,34 @@
     }
     document.getElementById("tSearchInput").oninput = renderTeacherSubmissions;
     document.getElementById("tClassFilter").onchange = renderTeacherSubmissions;
+    document.getElementById("tModeFilter").onchange = renderTeacherSubmissions;
 
     function renderTeacherQuestions() {
-      document.getElementById("qBankCount").textContent = state.questions.length;
+      const assigned = getTeacherAssignedClasses();
+      const filterCls = document.getElementById("tBankClassFilter").value;
+
+      const visibleEntries = state.questions
+        .map((q, globalIdx) => ({ q, globalIdx }))
+        .filter(({ q }) => {
+          const tc = q.targetClass || "ALL";
+          if (filterCls) return tc === filterCls;
+          return tc === "ALL" || assigned.includes(tc);
+        });
+
+      document.getElementById("qBankCount").textContent = visibleEntries.length;
       const tbody = document.getElementById("tQuestionsBody");
       tbody.innerHTML = "";
-      state.questions.forEach((q, idx) => {
+
+      visibleEntries.forEach(({ q, globalIdx }, displayIdx) => {
         const tr = document.createElement("tr");
-        const td1 = document.createElement("td"); td1.textContent = idx + 1;
+        const td1 = document.createElement("td"); td1.textContent = displayIdx + 1;
+
+        const tdCls = document.createElement("td");
+        const badge = document.createElement("span");
+        badge.className = "badge b-blue";
+        badge.textContent = q.targetClass === "ALL" ? "All Classes" : q.targetClass;
+        tdCls.appendChild(badge);
+
         const td2 = document.createElement("td"); td2.textContent = q.q;
         const td3 = document.createElement("td"); td3.textContent = `${letters[q.ans]} (${q.options[q.ans]})`;
         const td4 = document.createElement("td");
@@ -1847,20 +2305,22 @@
         const upBtn = document.createElement("button");
         upBtn.className = "btn btn-outline btn-sm";
         upBtn.textContent = "↑";
-        upBtn.disabled = idx === 0;
+        upBtn.disabled = displayIdx === 0;
         upBtn.onclick = () => {
-          [state.questions[idx - 1], state.questions[idx]] = [state.questions[idx], state.questions[idx - 1]];
-          saveState();
+          const prevGlobalIdx = visibleEntries[displayIdx - 1].globalIdx;
+          [state.questions[prevGlobalIdx], state.questions[globalIdx]] = [state.questions[globalIdx], state.questions[prevGlobalIdx]];
+          saveBranch("questions", state.questions);
           renderTeacherQuestions();
         };
 
         const downBtn = document.createElement("button");
         downBtn.className = "btn btn-outline btn-sm";
         downBtn.textContent = "↓";
-        downBtn.disabled = idx === state.questions.length - 1;
+        downBtn.disabled = displayIdx === visibleEntries.length - 1;
         downBtn.onclick = () => {
-          [state.questions[idx + 1], state.questions[idx]] = [state.questions[idx], state.questions[idx + 1]];
-          saveState();
+          const nextGlobalIdx = visibleEntries[displayIdx + 1].globalIdx;
+          [state.questions[nextGlobalIdx], state.questions[globalIdx]] = [state.questions[globalIdx], state.questions[nextGlobalIdx]];
+          saveBranch("questions", state.questions);
           renderTeacherQuestions();
         };
 
@@ -1869,25 +2329,50 @@
         del.textContent = "Delete";
         del.onclick = () => {
           if (state.questions.length <= 1) return alert("At least 1 question must remain.");
-          state.questions.splice(idx, 1);
-          addLog(session.name, `Removed question #${idx + 1} from bank`);
+          state.questions.splice(globalIdx, 1);
+          saveBranch("questions", state.questions);
+          addLog(session.name, `Removed question from ${q.targetClass || "ALL"} bank`);
           renderTeacherDashboard();
           showToast("Question removed", "info");
         };
         td4.append(upBtn, downBtn, del);
-        tr.append(td1, td2, td3, td4);
+        tr.append(td1, tdCls, td2, td3, td4);
         tbody.appendChild(tr);
       });
     }
+    document.getElementById("tBankClassFilter").onchange = renderTeacherQuestions;
 
     document.getElementById("shuffleBankBtn").onclick = () => {
-      state.questions = fisherYatesShuffle(state.questions);
-      addLog(session.name, "Shuffled question bank order");
-      renderTeacherDashboard();
-      showToast("Question bank shuffled and saved to cloud!", "success");
+      const assigned = getTeacherAssignedClasses();
+      const filterCls = document.getElementById("tBankClassFilter").value;
+      const matchingIndices = [];
+      const matchingItems = [];
+
+      state.questions.forEach((q, idx) => {
+        const tc = q.targetClass || "ALL";
+        const matches = filterCls ? tc === filterCls : (tc === "ALL" || assigned.includes(tc));
+        if (matches) {
+          matchingIndices.push(idx);
+          matchingItems.push(q);
+        }
+      });
+
+      const shuffled = fisherYatesShuffle(matchingItems);
+      matchingIndices.forEach((origIdx, i) => {
+        state.questions[origIdx] = shuffled[i];
+      });
+
+      saveBranch("questions", state.questions);
+      addLog(session.name, `Shuffled question bank (${filterCls || "assigned classes"})`);
+      renderTeacherQuestions();
+      showToast("Filtered question bank shuffled and saved!", "success");
     };
 
     document.getElementById("addQuestionBtn").onclick = () => {
+      const assigned = getTeacherAssignedClasses();
+      if (!assigned.length) return alert("You must be assigned at least one class by Admin before adding questions.");
+
+      const targetClass = document.getElementById("newQTargetClass").value || assigned[0];
       const q = document.getElementById("newQText").value.trim();
       const options = ["newOptA", "newOptB", "newOptC", "newOptD"].map(id => document.getElementById(id).value.trim());
       const ans = Number(document.getElementById("newQAns").value);
@@ -1896,17 +2381,20 @@
         alert("Please fill in the question, all 4 options, and the worked solution.");
         return;
       }
-      state.questions.push({ id: "q_" + Date.now(), q, options, ans, sol });
-      addLog(session.name, "Added a new question to the Mathematics bank");
+      state.questions.push({ id: "q_" + Date.now(), targetClass, q, options, ans, sol });
+      saveBranch("questions", state.questions);
+      addLog(session.name, `Added question for ${targetClass}`);
       ["newQText", "newOptA", "newOptB", "newOptC", "newOptD", "newQSol"].forEach(id => document.getElementById(id).value = "");
       renderTeacherDashboard();
-      showToast("New question added to bank!", "success");
+      showToast(`Question added to ${targetClass} bank!`, "success");
     };
 
     function renderTeacherNotices() {
+      const assigned = getTeacherAssignedClasses();
       const box = document.getElementById("tNoticesList");
       box.innerHTML = "";
       state.announcements.forEach((a, idx) => {
+        if (a.targetClass !== "ALL" && !assigned.includes(a.targetClass)) return;
         const wrap = document.createElement("div");
         wrap.className = "notice";
         wrap.style.display = "flex";
@@ -1915,28 +2403,37 @@
         wrap.style.gap = "10px";
         const left = document.createElement("div");
         const t = document.createElement("div"); t.textContent = a.text;
-        const m = document.createElement("div"); m.className = "notice-meta"; m.textContent = `${a.author} • ${a.date}`;
+        const m = document.createElement("div"); m.className = "notice-meta";
+        m.textContent = `${a.author} • Target: ${a.targetClass === "ALL" ? "All Classes" : a.targetClass} • ${a.date}`;
         left.append(t, m);
         const del = document.createElement("button");
         del.className = "btn btn-outline btn-sm";
         del.textContent = "Remove";
-        del.onclick = () => { state.announcements.splice(idx, 1); saveState(); renderTeacherNotices(); };
+        del.onclick = () => {
+          state.announcements.splice(idx, 1);
+          saveBranch("announcements", state.announcements);
+          renderTeacherNotices();
+        };
         wrap.append(left, del);
         box.appendChild(wrap);
       });
     }
 
     document.getElementById("postNoticeBtn").onclick = () => {
+      const assigned = getTeacherAssignedClasses();
+      if (!assigned.length) return alert("No classes assigned to your account.");
       const txt = document.getElementById("newNoticeInput").value.trim();
+      const targetClass = document.getElementById("newNoticeClass").value || assigned[0];
       if (!txt) return;
-      state.announcements.unshift({ id: "n" + Date.now(), text: txt, author: session.name, date: new Date().toLocaleDateString() });
-      addLog(session.name, "Posted a new announcement");
+      state.announcements.unshift({ id: "n" + Date.now(), targetClass, text: txt, author: session.name, date: new Date().toLocaleDateString() });
+      saveBranch("announcements", state.announcements);
+      addLog(session.name, `Posted announcement for ${targetClass}`);
       document.getElementById("newNoticeInput").value = "";
       renderTeacherNotices();
       showToast("Announcement posted!", "success");
     };
 
-    document.getElementById("tResetPassBtn").onclick = () => {
+    document.getElementById("tResetPassBtn").onclick = async () => {
       const p1 = document.getElementById("tNewPassInput").value.trim();
       const p2 = document.getElementById("tConfirmPassInput").value.trim();
       const msg = document.getElementById("tPassSavedMsg");
@@ -1952,31 +2449,34 @@
       }
       const teacherObj = state.users.find(u => u.id === session.id);
       if (teacherObj) {
-        teacherObj.password = p1;
+        teacherObj.passwordHash = await sha256(p1);
+        saveBranch("users", state.users);
         addLog(session.name, "Reset personal teacher password");
         document.getElementById("tNewPassInput").value = "";
         document.getElementById("tConfirmPassInput").value = "";
         msg.style.color = "var(--success)";
-        msg.textContent = "Password updated successfully!";
+        msg.textContent = "Password updated securely!";
         showToast("Teacher password updated!", "success");
         setTimeout(() => { msg.textContent = ""; }, 3000);
       }
     };
 
     document.getElementById("exportCsvBtn").onclick = () => {
-      const rows = [["Student Name", "Class", "Mode", "Score", "Total", "Percentage", "Date"]];
+      const assigned = getTeacherAssignedClasses();
+      const rows = [["Student Name", "Class", "Mode", "Score", "Total", "Percentage", "Tab Switches", "Date"]];
       state.submissions.forEach(s => {
         const sClass = s.studentClass || s.indexNumber || "";
-        rows.push([`"${s.studentName}"`, `"${sClass}"`, s.mode, s.score, s.total, `${s.pct}%`, `"${s.date}"`]);
+        if (!assigned.includes(sClass)) return;
+        rows.push([`"${s.studentName}"`, `"${sClass}"`, s.mode, s.score, s.total, `${s.pct}%`, s.tabSwitches || 0, `"${s.date}"`]);
       });
       const blob = new Blob([rows.map(r => r.join(",")).join("\n")], { type: "text/csv" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = "gbat_student_results.csv";
+      a.download = `gbat_results_${assigned.join("_") || "classes"}.csv`;
       a.click();
     };
 
-    /* ---------------- ADMIN DASHBOARD & EXCEL STUDENT UPLOAD ---------------- */
+    /* ---------------- ADMIN DASHBOARD ---------------- */
     document.querySelectorAll("#adminTabs .sub-tab").forEach(btn => {
       btn.onclick = () => {
         document.querySelectorAll("#adminTabs .sub-tab").forEach(b => b.classList.remove("active"));
@@ -1991,17 +2491,17 @@
       const isStudent = e.target.value === "student";
       document.getElementById("aNewClassWrap").classList.toggle("hidden", !isStudent);
       document.getElementById("aNewStaffWrap").classList.toggle("hidden", isStudent);
+      document.getElementById("aNewTeacherClassesWrap").classList.toggle("hidden", isStudent);
     };
 
-    // Download Excel Template
     document.getElementById("downloadExcelTemplateBtn").onclick = () => {
       if (typeof XLSX === "undefined") {
         return alert("Spreadsheet library is still loading. Check your internet connection and try again.");
       }
       const sampleRows = [
-        { "Full Name": "Kwame Mensah", "Class": state.classes[0] || "JHS 3A" },
-        { "Full Name": "Ama Serwaa", "Class": state.classes[1] || state.classes[0] || "JHS 3B" },
-        { "Full Name": "Kofi Boateng", "Class": state.classes[0] || "JHS 3A" }
+        { "Full Name": "Kwame Mensah", "Class": state.classes[0] || "Basic 8" },
+        { "Full Name": "Ama Serwaa", "Class": state.classes[1] || state.classes[0] || "Basic 9" },
+        { "Full Name": "Kofi Boateng", "Class": state.classes[0] || "Basic 8" }
       ];
       const ws = XLSX.utils.json_to_sheet(sampleRows);
       ws["!cols"] = [{ wch: 28 }, { wch: 18 }];
@@ -2011,15 +2511,11 @@
       showToast("Excel template downloaded!", "success");
     };
 
-    // Excel Drag & Drop + File Input Handlers
     const dropZone = document.getElementById("excelDropZone");
     const fileInput = document.getElementById("excelFileInput");
 
     dropZone.onclick = () => fileInput.click();
-    dropZone.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      dropZone.classList.add("dragover");
-    });
+    dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("dragover"); });
     dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
     dropZone.addEventListener("drop", (e) => {
       e.preventDefault();
@@ -2032,9 +2528,7 @@
     };
 
     function handleExcelFile(file) {
-      if (typeof XLSX === "undefined") {
-        return alert("Spreadsheet parser unavailable. Check internet connection.");
-      }
+      if (typeof XLSX === "undefined") return alert("Spreadsheet parser unavailable. Check internet connection.");
       const reader = new FileReader();
       reader.onload = (evt) => {
         try {
@@ -2043,22 +2537,19 @@
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
 
-          if (!rows.length) {
-            return showToast("The uploaded spreadsheet is empty.", "error");
-          }
+          if (!rows.length) return showToast("The uploaded spreadsheet is empty.", "error");
 
           let addedCount = 0;
           let updatedCount = 0;
           let classesCreated = 0;
 
           rows.forEach((row, index) => {
-            // Flexible header matching (Full Name / Name / Student Name, Class / Form / Grade)
             const keys = Object.keys(row);
             const nameKey = keys.find(k => /name|student/i.test(k)) || keys[0];
             const classKey = keys.find(k => /class|form|grade|stream/i.test(k)) || keys[1];
 
-            const studentName = String(row[nameKey] || "").trim();
-            const studentClass = String(row[classKey] || state.classes[0] || "JHS 3A").trim();
+            const studentName = normalizeName(row[nameKey]);
+            const studentClass = normalizeName(row[classKey] || state.classes[0] || "Basic 8");
 
             if (!studentName) return;
 
@@ -2067,8 +2558,9 @@
               classesCreated++;
             }
 
-            const existing = state.users.find(u => u.role === "student" && u.name.toLowerCase() === studentName.toLowerCase());
+            const existing = state.users.find(u => u.role === "student" && normalizeName(u.name).toLowerCase() === studentName.toLowerCase());
             if (existing) {
+              existing.name = studentName;
               existing.code = studentClass;
               existing.active = true;
               updatedCount++;
@@ -2083,6 +2575,9 @@
               addedCount++;
             }
           });
+
+          if (classesCreated) saveBranch("classes", state.classes);
+          saveBranch("users", state.users);
 
           const summary = `Excel Import Complete: ${addedCount} new students added, ${updatedCount} updated${classesCreated ? `, ${classesCreated} new classes created` : ""}.`;
           const box = document.getElementById("excelUploadSummary");
@@ -2101,18 +2596,57 @@
       reader.readAsArrayBuffer(file);
     }
 
+    function openEditTeacherClassesModal(teacher) {
+      editingTeacherId = teacher.id;
+      document.getElementById("editTeacherModalTitle").textContent = `Assign Classes: ${teacher.name}`;
+      const boxWrap = document.getElementById("editTeacherClassBoxes");
+      boxWrap.innerHTML = "";
+      const currentAssigned = Array.isArray(teacher.assignedClasses) ? teacher.assignedClasses : [];
+      state.classes.forEach(cls => {
+        const lbl = document.createElement("label");
+        lbl.className = "checkbox-pill";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.value = cls;
+        cb.checked = currentAssigned.includes(cls);
+        lbl.append(cb, document.createTextNode(cls));
+        boxWrap.appendChild(lbl);
+      });
+      document.getElementById("editTeacherModal").classList.remove("hidden");
+    }
+
+    document.getElementById("closeEditTeacherModalBtn").onclick = () => {
+      editingTeacherId = null;
+      document.getElementById("editTeacherModal").classList.add("hidden");
+    };
+
+    document.getElementById("saveEditTeacherClassesBtn").onclick = () => {
+      if (!editingTeacherId) return;
+      const teacher = state.users.find(u => u.id === editingTeacherId);
+      if (teacher) {
+        const selected = Array.from(document.querySelectorAll("#editTeacherClassBoxes input:checked")).map(i => i.value);
+        teacher.assignedClasses = selected;
+        saveBranch("users", state.users);
+        addLog("Principal Admin", `Updated classes for ${teacher.name}: ${selected.join(", ") || "None"}`);
+        populateDropdowns();
+        renderAdminDashboard();
+        showToast(`Classes updated for ${teacher.name}`, "success");
+      }
+      editingTeacherId = null;
+      document.getElementById("editTeacherModal").classList.add("hidden");
+    };
+
     function renderAdminDashboard() {
       const students = state.users.filter(u => u.role === "student");
-      const subs = state.submissions;
-      const avg = subs.length ? Math.round(subs.reduce((a, b) => a + b.pct, 0) / subs.length) : 0;
+      const examSubs = state.submissions.filter(s => s.mode === "Exam");
+      const avg = examSubs.length ? Math.round(examSubs.reduce((a, b) => a + b.pct, 0) / examSubs.length) : 0;
 
       document.getElementById("aKpiStudents").textContent = students.length;
       document.getElementById("aKpiClasses").textContent = state.classes.length;
       document.getElementById("aKpiAvg").textContent = `${avg}%`;
-      document.getElementById("aKpiStatus").textContent = state.settings.quizOpen ? "OPEN" : "CLOSED";
+      document.getElementById("aKpiRoster").textContent = state.settings.rosterLock ? "ON" : "OFF";
       document.getElementById("aUserCount").textContent = state.users.length;
 
-      // Render Class Tags
       const classBox = document.getElementById("aClassList");
       classBox.innerHTML = "";
       if (!state.classes.length) {
@@ -2127,7 +2661,16 @@
           delBtn.textContent = "×";
           delBtn.onclick = () => {
             if (state.classes.length <= 1) return alert("Keep at least 1 class active.");
+            const enrolled = state.users.filter(u => u.role === "student" && u.code === cls).length;
+            if (enrolled > 0 && !confirm(`${enrolled} student(s) are currently enrolled in ${cls}. Remove this class anyway?`)) return;
             state.classes.splice(idx, 1);
+            state.users.forEach(u => {
+              if (u.role === "teacher" && Array.isArray(u.assignedClasses)) {
+                u.assignedClasses = u.assignedClasses.filter(c => c !== cls);
+              }
+            });
+            saveBranch("classes", state.classes);
+            saveBranch("users", state.users);
             addLog("Principal Admin", `Removed class: ${cls}`);
             populateDropdowns();
             renderAdminDashboard();
@@ -2137,16 +2680,19 @@
         });
       }
 
-      document.getElementById("aAdminPassSetting").value = state.settings.adminPass || "admin123";
-      document.getElementById("aTeacherPassSetting").value = state.settings.teacherPass || "teacher123";
-
       const tbody = document.getElementById("aUsersBody");
       tbody.innerHTML = "";
       state.users.forEach((u, idx) => {
         const tr = document.createElement("tr");
         const tdN = document.createElement("td"); tdN.textContent = u.name;
         const tdR = document.createElement("td"); tdR.textContent = u.role.toUpperCase();
-        const tdC = document.createElement("td"); tdC.textContent = u.code;
+        const tdC = document.createElement("td");
+        if (u.role === "teacher") {
+          const clsList = (u.assignedClasses && u.assignedClasses.length) ? u.assignedClasses.join(", ") : "None Assigned";
+          tdC.textContent = `${u.code} • Classes: ${clsList}`;
+        } else {
+          tdC.textContent = u.code;
+        }
         const tdS = document.createElement("td");
         const stBadge = document.createElement("span");
         stBadge.className = `badge ${u.active ? "b-green" : "b-red"}`;
@@ -2155,22 +2701,33 @@
 
         const tdA = document.createElement("td");
         tdA.style.display = "flex"; tdA.style.gap = "6px"; tdA.style.flexWrap = "wrap";
+
+        if (u.role === "teacher") {
+          const clsBtn = document.createElement("button");
+          clsBtn.className = "btn btn-primary btn-sm";
+          clsBtn.textContent = "Assign Classes";
+          clsBtn.onclick = () => openEditTeacherClassesModal(u);
+          tdA.appendChild(clsBtn);
+        }
+
         const tog = document.createElement("button");
         tog.className = "btn btn-outline btn-sm";
         tog.textContent = u.active ? "Suspend" : "Activate";
         tog.onclick = () => {
           u.active = !u.active;
+          saveBranch("users", state.users);
           addLog("Principal Admin", `${u.active ? "Activated" : "Suspended"} ${u.name}`);
           renderAdminDashboard();
         };
         tdA.appendChild(tog);
 
-        if (u.role === "teacher" && u.password) {
+        if (u.role === "teacher" && u.passwordHash) {
           const rst = document.createElement("button");
           rst.className = "btn btn-secondary btn-sm";
           rst.textContent = "Reset Pass";
           rst.onclick = () => {
-            u.password = "";
+            u.passwordHash = "";
+            saveBranch("users", state.users);
             addLog("Principal Admin", `Reset password for ${u.name} to default teacher password`);
             showToast(`${u.name}'s password reset to Default Teacher Password`, "info");
           };
@@ -2182,6 +2739,7 @@
         del.textContent = "Remove";
         del.onclick = () => {
           state.users.splice(idx, 1);
+          saveBranch("users", state.users);
           addLog("Principal Admin", `Removed user ${u.name}`);
           populateDropdowns();
           renderAdminDashboard();
@@ -2192,8 +2750,11 @@
       });
 
       document.getElementById("aQuizOpenSelect").value = String(state.settings.quizOpen);
+      document.getElementById("aRosterLockSelect").value = String(state.settings.rosterLock !== false);
+      document.getElementById("aMaxExamAttemptsSelect").value = String(state.settings.maxExamAttempts ?? 1);
       document.getElementById("aExamMinsInput").value = state.settings.examMinutes;
       document.getElementById("aShuffleModeSelect").value = state.settings.shuffleMode || "both";
+      document.getElementById("aAntiCheatSelect").value = String(state.settings.antiCheat !== false);
 
       const logBody = document.getElementById("aLogsBody");
       logBody.innerHTML = "";
@@ -2207,12 +2768,13 @@
     }
 
     document.getElementById("aAddClassBtn").onclick = () => {
-      const cls = document.getElementById("aNewClassInput").value.trim();
-      if (!cls) return alert("Enter a class name (e.g. JHS 3C).");
+      const cls = normalizeName(document.getElementById("aNewClassInput").value);
+      if (!cls) return alert("Enter a class name (e.g. Basic 8).");
       if (state.classes.some(c => c.toLowerCase() === cls.toLowerCase())) {
         return alert("That class already exists.");
       }
       state.classes.push(cls);
+      saveBranch("classes", state.classes);
       addLog("Principal Admin", `Created new class: ${cls}`);
       document.getElementById("aNewClassInput").value = "";
       populateDropdowns();
@@ -2220,44 +2782,63 @@
       showToast(`Class "${cls}" added!`, "success");
     };
 
-    document.getElementById("aSavePassBtn").onclick = () => {
+    document.getElementById("aSavePassBtn").onclick = async () => {
       const admP = document.getElementById("aAdminPassSetting").value.trim();
       const tchP = document.getElementById("aTeacherPassSetting").value.trim();
-      if (!admP || !tchP) return alert("Passwords cannot be empty.");
-      state.settings.adminPass = admP;
-      state.settings.teacherPass = tchP;
-      addLog("Principal Admin", "Updated Admin and Default Teacher passwords");
+      if (!admP && !tchP) return alert("Enter at least one new password to update.");
+      if (admP) {
+        state.settings.adminPassHash = await sha256(admP);
+        state.settings.adminPass = "";
+      }
+      if (tchP) {
+        state.settings.teacherPassHash = await sha256(tchP);
+        state.settings.teacherPass = "";
+      }
+      saveBranch("settings", state.settings);
+      addLog("Principal Admin", "Updated encrypted Admin / Default Teacher passwords");
+      document.getElementById("aAdminPassSetting").value = "";
+      document.getElementById("aTeacherPassSetting").value = "";
       const msg = document.getElementById("aPassSavedMsg");
-      msg.textContent = "Passwords saved to cloud!";
-      showToast("Admin & Teacher passwords saved!", "success");
+      msg.textContent = "Passwords encrypted & saved!";
+      showToast("Passwords updated securely!", "success");
       setTimeout(() => { msg.textContent = ""; }, 2500);
     };
 
     document.getElementById("aAddUserBtn").onclick = () => {
-      const name = document.getElementById("aNewName").value.trim();
+      const name = normalizeName(document.getElementById("aNewName").value);
       const role = document.getElementById("aNewRole").value;
-      const code = role === "student"
-        ? (document.getElementById("aNewClassSelect").value || "Unassigned")
-        : (document.getElementById("aNewStaffCode").value.trim() || "TCH-NEW");
       if (!name) return alert("Enter a full name.");
-      const userObj = { id: "u" + Date.now(), name, role, code, active: true };
-      if (role === "teacher") userObj.password = "";
-      state.users.push(userObj);
-      addLog("Principal Admin", `Created ${role} account: ${name} (${code})`);
+
+      if (role === "student") {
+        const cls = document.getElementById("aNewClassSelect").value || state.classes[0] || "Unassigned";
+        state.users.push({ id: "u" + Date.now(), name, role: "student", code: cls, active: true });
+        addLog("Principal Admin", `Added student: ${name} (${cls})`);
+      } else {
+        const staffCode = normalizeName(document.getElementById("aNewStaffCode").value) || "TCH-NEW";
+        const assignedClasses = Array.from(document.querySelectorAll("#aNewTeacherClassCheckboxes input:checked")).map(i => i.value);
+        state.users.push({ id: "t" + Date.now(), name, role: "teacher", code: staffCode, assignedClasses, passwordHash: "", active: true });
+        addLog("Principal Admin", `Added teacher: ${name} (${staffCode}) → Classes: ${assignedClasses.join(", ") || "None"}`);
+      }
+
+      saveBranch("users", state.users);
       document.getElementById("aNewName").value = "";
       document.getElementById("aNewStaffCode").value = "";
       populateDropdowns();
       renderAdminDashboard();
-      showToast(`Added ${name} (${code})`, "success");
+      showToast(`Created ${role} account for ${name}`, "success");
     };
 
     document.getElementById("aSaveSettingsBtn").onclick = () => {
       state.settings.quizOpen = document.getElementById("aQuizOpenSelect").value === "true";
+      state.settings.rosterLock = document.getElementById("aRosterLockSelect").value === "true";
+      state.settings.maxExamAttempts = Number(document.getElementById("aMaxExamAttemptsSelect").value);
       state.settings.examMinutes = Math.max(5, Number(document.getElementById("aExamMinsInput").value) || 45);
       state.settings.shuffleMode = document.getElementById("aShuffleModeSelect").value;
-      addLog("Principal Admin", `Updated exam settings (Open: ${state.settings.quizOpen}, Duration: ${state.settings.examMinutes} mins, Shuffle: ${state.settings.shuffleMode})`);
+      state.settings.antiCheat = document.getElementById("aAntiCheatSelect").value === "true";
+      saveBranch("settings", state.settings);
+      addLog("Principal Admin", `Updated exam & security settings (RosterLock: ${state.settings.rosterLock}, MaxExamAttempts: ${state.settings.maxExamAttempts})`);
       document.getElementById("aSettingsSaved").textContent = "Settings saved!";
-      showToast("Exam settings updated!", "success");
+      showToast("Exam & security settings saved!", "success");
       setTimeout(() => document.getElementById("aSettingsSaved").textContent = "", 2500);
       renderAdminDashboard();
     };
@@ -2273,11 +2854,14 @@
     document.getElementById("resetDemoBtn").onclick = () => {
       if (!confirm("Reset all submissions, classes, users, and custom questions back to default database?")) return;
       state = getDefaultState();
-      saveState();
+      set(rootRef, state).then(markSynced);
       populateDropdowns();
       renderAdminDashboard();
       showToast("Database reset to default", "info");
     };
   </script>
+ < footer>
+   <h1>Developed by: Daniel Owusu Frimpong</h1>
+ </footer>
 </body>
 </html>
