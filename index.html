@@ -211,7 +211,7 @@
     }
     .checkbox-pill input { width: auto; margin: 0; }
 
-    /* Excel Dropzone */
+    /* Dropzone */
     .drop-zone {
       border: 2px dashed #93c5fd;
       background: #f8fafc;
@@ -416,7 +416,6 @@
       flex-shrink: 0;
       transition: background 0.2s ease, color 0.2s ease;
     }
-    /* Neutral selected state during quiz — reveals score only after full submission */
     .opt-btn.selected {
       border-color: var(--primary);
       background: var(--primary-soft);
@@ -679,7 +678,7 @@
       </div>
     </section>
 
-    <!-- 2B. QUIZ RUNNER (SCORE & SOLUTIONS REVEALED ONLY AFTER SUBMISSION) -->
+    <!-- 2B. QUIZ RUNNER -->
     <section id="quizScreen" class="hidden screen-anim">
       <div class="quiz-layout">
         <div class="card" id="quizQuestionCard">
@@ -812,9 +811,35 @@
         </div>
       </div>
 
-      <!-- T3: Class-Isolated Question Bank -->
+      <!-- T3: Class-Isolated Question Bank + Multi-Format Quiz Importer -->
       <div class="card hidden" id="tQuestions">
-        <h3 style="margin-top:0;">Add New Question to Specific Class Bank</h3>
+        <!-- Bulk Upload Section (GIFT, Excel, CSV, Aiken TXT, JSON) -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+          <div>
+            <h3 style="margin:0;">Bulk Import Questions (GIFT, Excel, CSV, Aiken TXT, JSON)</h3>
+            <p style="color:var(--muted); font-size:0.88rem; margin:4px 0 0;">
+              Appends questions directly to your selected class bank without erasing existing questions or student records.
+            </p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <select id="bulkQTargetClass" style="padding:7px 11px; border:1px solid var(--border); border-radius:8px; background:#fff; font-weight:600;"></select>
+            <button class="btn btn-outline btn-sm" id="downloadQTemplateBtn">⬇ Download Excel Question Template (.xlsx)</button>
+          </div>
+        </div>
+
+        <div class="drop-zone" id="quizFileDropZone">
+          <div style="font-size:1.55rem; margin-bottom:4px;">📥</div>
+          <div style="font-weight:700; color:var(--primary-dark);">Drag &amp; Drop Quiz File Here or Click to Browse</div>
+          <div style="font-size:0.84rem; color:var(--muted); margin-top:4px;">
+            Supports Moodle <strong>.gift</strong>, Excel <strong>.xlsx / .xls</strong>, <strong>.csv</strong>, Aiken <strong>.txt</strong>, and <strong>.json</strong>
+          </div>
+          <input type="file" id="quizFileInput" accept=".gift,.txt,.xlsx,.xls,.csv,.json" class="hidden" />
+        </div>
+        <div id="quizImportSummary" class="hidden" style="margin-top:10px; padding:10px 14px; border-radius:8px; background:var(--success-bg); color:var(--success); font-weight:600; font-size:0.9rem;"></div>
+
+        <hr style="border:none; border-top:1px solid var(--border); margin:24px 0;" />
+
+        <h3 style="margin-top:0;">Add Single Question to Specific Class Bank</h3>
         <div class="form-grid">
           <div class="field" style="grid-column: span 2;">
             <label>Question Text</label>
@@ -959,7 +984,7 @@
 
         <div class="drop-zone" id="excelDropZone">
           <div style="font-size:1.5rem; margin-bottom:4px;">📊</div>
-          <div style="font-weight:700; color:var(--primary-dark);">Drag &amp; Drop Excel File Here or Click to Browse</div>
+          <div style="font-weight:700; color:var(--primary-dark);">Drag &amp; Drop Student Excel File Here or Click to Browse</div>
           <div style="font-size:0.84rem; color:var(--muted); margin-top:4px;">Supports .xlsx, .xls, and .csv student rosters</div>
           <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="hidden" />
         </div>
@@ -1101,7 +1126,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+    import { getDatabase, ref, set, push, onValue, get } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDNL-VVWcySHu7bKDPV0TDs8DkxiFqxPz4",
@@ -1144,7 +1169,7 @@
         toast.style.transform = "translateY(8px)";
         toast.style.transition = "all 0.25s ease";
         setTimeout(() => toast.remove(), 260);
-      }, 3200);
+      }, 3400);
     }
 
     function launchConfetti() {
@@ -1286,63 +1311,56 @@
       saveBranch("logs", state.logs);
     }
 
-    onValue(rootRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const loadedQuestions = (Array.isArray(data.questions) ? data.questions : Object.values(data.questions || defaultQuestions)).map((q, idx) => ({
-          ...q,
-          id: q.id || `q_legacy_${idx}`,
-          targetClass: q.targetClass || "ALL"
-        }));
+    function hydrateStateFromSnapshot(data) {
+      const loadedQuestions = (Array.isArray(data.questions) ? data.questions : Object.values(data.questions || defaultQuestions)).map((q, idx) => ({
+        ...q,
+        id: q.id || `q_legacy_${idx}`,
+        targetClass: q.targetClass || "ALL"
+      }));
 
-        const rawUsers = Array.isArray(data.users) ? data.users : Object.values(data.users || {});
-        const loadedUsers = rawUsers.map(u => ({
-          ...u,
-          assignedClasses: u.role === "teacher"
-            ? (Array.isArray(u.assignedClasses) ? u.assignedClasses : [])
-            : undefined
-        }));
+      const rawUsers = Array.isArray(data.users) ? data.users : Object.values(data.users || {});
+      const loadedUsers = rawUsers.map(u => ({
+        ...u,
+        assignedClasses: u.role === "teacher"
+          ? (Array.isArray(u.assignedClasses) ? u.assignedClasses : [])
+          : undefined
+      }));
 
-        let loadedSubs = [];
-        if (Array.isArray(data.submissions)) {
-          loadedSubs = data.submissions.filter(Boolean);
-        } else if (data.submissions && typeof data.submissions === "object") {
-          loadedSubs = Object.entries(data.submissions).map(([fbKey, val]) => ({ fbKey, ...val }));
-        }
-
-        const loadedNotices = (Array.isArray(data.announcements) ? data.announcements : Object.values(data.announcements || {})).map(n => ({
-          ...n,
-          targetClass: n.targetClass || "ALL"
-        }));
-
-        state = {
-          classes: Array.isArray(data.classes) && data.classes.length ? data.classes : ["Basic 8", "Basic 9"],
-          users: loadedUsers,
-          questions: loadedQuestions,
-          submissions: loadedSubs,
-          announcements: loadedNotices,
-          settings: {
-            quizOpen: true,
-            practiceOpen: true,
-            rosterLock: true,
-            maxExamAttempts: 1,
-            antiCheat: true,
-            examMinutes: 45,
-            shuffleMode: "both",
-            teacherPass: "teacher123",
-            adminPass: "admin123",
-            teacherPassHash: "",
-            adminPassHash: "",
-            ...(data.settings || {})
-          },
-          logs: Array.isArray(data.logs) ? data.logs : []
-        };
-        markSynced();
-      } else {
-        state = getDefaultState();
-        set(rootRef, state).then(markSynced);
+      let loadedSubs = [];
+      if (Array.isArray(data.submissions)) {
+        loadedSubs = data.submissions.filter(Boolean);
+      } else if (data.submissions && typeof data.submissions === "object") {
+        loadedSubs = Object.entries(data.submissions).map(([fbKey, val]) => ({ fbKey, ...val }));
       }
 
+      const loadedNotices = (Array.isArray(data.announcements) ? data.announcements : Object.values(data.announcements || {})).map(n => ({
+        ...n,
+        targetClass: n.targetClass || "ALL"
+      }));
+
+      state = {
+        classes: Array.isArray(data.classes) && data.classes.length ? data.classes : ["Basic 8", "Basic 9"],
+        users: loadedUsers,
+        questions: loadedQuestions,
+        submissions: loadedSubs,
+        announcements: loadedNotices,
+        settings: {
+          quizOpen: true,
+          practiceOpen: true,
+          rosterLock: true,
+          maxExamAttempts: 1,
+          antiCheat: true,
+          examMinutes: 45,
+          shuffleMode: "both",
+          teacherPass: "teacher123",
+          adminPass: "admin123",
+          teacherPassHash: "",
+          adminPassHash: "",
+          ...(data.settings || {})
+        },
+        logs: Array.isArray(data.logs) ? data.logs : []
+      };
+      markSynced();
       populateDropdowns();
       updateRosterLoginHint();
 
@@ -1351,6 +1369,24 @@
         if (session.role === "teacher" && !document.getElementById("teacherDashboard").classList.contains("hidden")) renderTeacherDashboard();
         if (session.role === "admin" && !document.getElementById("adminDashboard").classList.contains("hidden")) renderAdminDashboard();
       }
+    }
+
+    // Safe one-time seed check (never overwrites existing cloud data on deploy/reload)
+    get(rootRef).then((snap) => {
+      if (snap.exists()) {
+        hydrateStateFromSnapshot(snap.val());
+      } else {
+        state = getDefaultState();
+        set(rootRef, state).then(markSynced);
+      }
+    }).catch((err) => {
+      console.error("Initial Firebase check error:", err);
+      syncBadge.textContent = "⚠ Offline / Check Rules";
+    });
+
+    onValue(rootRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) hydrateStateFromSnapshot(data);
     }, (error) => {
       console.error("Firebase connection error:", error);
       syncBadge.textContent = "⚠ Offline / Check Rules";
@@ -1695,7 +1731,6 @@
         modeStatusNote.classList.add("hidden");
       }
 
-      // Enforce Exam Attempt Limit
       const limitMsg = document.getElementById("stuExamLimitMsg");
       if (examOpen && maxExams > 0 && examAttempts.length >= maxExams) {
         examBtn.disabled = true;
@@ -1750,7 +1785,7 @@
       startQuiz("Exam");
     };
 
-    /* ---------------- QUIZ ENGINE (SCORE REVEALED ONLY AFTER FULL COMPLETION) ---------------- */
+    /* ---------------- QUIZ ENGINE ---------------- */
     function buildShuffledQuizItems(studentClass) {
       const mode = state.settings.shuffleMode || "both";
       const pool = getQuestionsForClass(studentClass);
@@ -1919,7 +1954,6 @@
         diag.innerHTML = "";
       }
 
-      // Neutral selection highlight only — no right/wrong reveal until student finishes the quiz
       const box = document.getElementById("optionsBox");
       box.innerHTML = "";
       item.options.forEach((opt, oIdx) => {
@@ -1937,7 +1971,6 @@
         box.appendChild(btn);
       });
 
-      // Navigator dots show neutral blue for answered questions (never green/red mid-quiz)
       const grid = document.getElementById("paletteGrid");
       grid.innerHTML = "";
       qs.forEach((q, qIdx) => {
@@ -1992,7 +2025,6 @@
     function submitQuiz(forced = false) {
       if (!activeQuiz) return;
 
-      // Require confirmation if unanswered questions remain and submission wasn't forced by timer/anti-cheat
       if (!forced) {
         const unansweredCount = activeQuiz.answers.filter(a => a === null).length;
         if (unansweredCount > 0) {
@@ -2101,7 +2133,7 @@
       else { renderStudentDashboard(); showScreen("studentDashboard"); }
     };
 
-    /* ---------------- TEACHER DASHBOARD (SCOPED TO ASSIGNED CLASSES) ---------------- */
+    /* ---------------- TEACHER DASHBOARD & MULTI-FORMAT QUIZ IMPORTER ---------------- */
     document.querySelectorAll("#teacherTabs .sub-tab").forEach(btn => {
       btn.onclick = () => {
         document.querySelectorAll("#teacherTabs .sub-tab").forEach(b => b.classList.remove("active"));
@@ -2142,16 +2174,19 @@
       });
       if (assigned.includes(curAnaFilter)) tAnaFilter.value = curAnaFilter;
 
-      const newQCls = document.getElementById("newQTargetClass");
-      const curNewQCls = newQCls.value;
-      newQCls.innerHTML = "";
-      assigned.forEach(c => {
-        const opt = document.createElement("option"); opt.value = c; opt.textContent = `${c} Only`; newQCls.appendChild(opt);
+      // Populate both Single-Add and Bulk-Import Class Selectors
+      ["newQTargetClass", "bulkQTargetClass"].forEach(selId => {
+        const sel = document.getElementById(selId);
+        const curVal = sel.value;
+        sel.innerHTML = "";
+        assigned.forEach(c => {
+          const opt = document.createElement("option"); opt.value = c; opt.textContent = `${c} Only`; sel.appendChild(opt);
+        });
+        if (assigned.length > 1) {
+          const allOpt = document.createElement("option"); allOpt.value = "ALL"; allOpt.textContent = "All Classes (Shared)"; sel.appendChild(allOpt);
+        }
+        if (curVal) sel.value = curVal;
       });
-      if (assigned.length > 1) {
-        const allOpt = document.createElement("option"); allOpt.value = "ALL"; allOpt.textContent = "All Classes (Shared)"; newQCls.appendChild(allOpt);
-      }
-      if (curNewQCls) newQCls.value = curNewQCls;
 
       const bankFilter = document.getElementById("tBankClassFilter");
       const curBankFilter = bankFilter.value;
@@ -2186,6 +2221,299 @@
       renderTeacherSubmissions();
       renderTeacherQuestions();
       renderTeacherNotices();
+    }
+
+    /* ---- BULK QUESTION IMPORTER (GIFT, EXCEL, CSV, AIKEN TXT, JSON) ---- */
+    document.getElementById("downloadQTemplateBtn").onclick = () => {
+      if (typeof XLSX === "undefined") {
+        return showToast("Spreadsheet library still loading. Check internet connection.", "error");
+      }
+      const assigned = getTeacherAssignedClasses();
+      const defaultCls = assigned[0] || "Basic 8";
+      const sampleRows = [
+        {
+          "Question": "Simplify: 3x + 5x - 2x",
+          "Option A": "6x",
+          "Option B": "8x",
+          "Option C": "10x",
+          "Option D": "5x",
+          "Correct Answer": "A",
+          "Worked Solution": "Combine like terms: (3 + 5 - 2)x = 6x.",
+          "Target Class": defaultCls
+        },
+        {
+          "Question": "Find the perimeter of a square of side 9 cm.",
+          "Option A": "18 cm",
+          "Option B": "27 cm",
+          "Option C": "36 cm",
+          "Option D": "81 cm",
+          "Correct Answer": "C",
+          "Worked Solution": "Perimeter of square = 4 × side = 4 × 9 = 36 cm.",
+          "Target Class": defaultCls
+        }
+      ];
+      const ws = XLSX.utils.json_to_sheet(sampleRows);
+      ws["!cols"] = [{ wch: 42 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 15 }, { wch: 44 }, { wch: 16 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Questions");
+      XLSX.writeFile(wb, "GBAT_Questions_Template.xlsx");
+      showToast("Excel Question Template downloaded!", "success");
+    };
+
+    const quizDropZone = document.getElementById("quizFileDropZone");
+    const quizFileInput = document.getElementById("quizFileInput");
+
+    quizDropZone.onclick = () => quizFileInput.click();
+    quizDropZone.addEventListener("dragover", (e) => { e.preventDefault(); quizDropZone.classList.add("dragover"); });
+    quizDropZone.addEventListener("dragleave", () => quizDropZone.classList.remove("dragover"));
+    quizDropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      quizDropZone.classList.remove("dragover");
+      if (e.dataTransfer.files.length) handleQuizImportFile(e.dataTransfer.files[0]);
+    });
+    quizFileInput.onchange = (e) => {
+      if (e.target.files.length) handleQuizImportFile(e.target.files[0]);
+      quizFileInput.value = "";
+    };
+
+    function parseCorrectAnswerIndex(rawVal, optionsArr) {
+      const s = String(rawVal ?? "").trim();
+      const upper = s.toUpperCase();
+      if (upper === "A") return 0;
+      if (upper === "B") return 1;
+      if (upper === "C") return 2;
+      if (upper === "D") return 3;
+      if (["0", "1", "2", "3"].includes(s)) {
+        const n = Number(s);
+        // Support 1-4 if written as 1..4 when no 0 is used, or 0..3
+        return n;
+      }
+      if (s === "4") return 3;
+      // Match option text directly if user put the full answer string
+      const textIdx = optionsArr.findIndex(o => o.trim().toLowerCase() === s.toLowerCase());
+      return textIdx >= 0 ? textIdx : 0;
+    }
+
+    function parseGiftQuestions(rawText, defaultTargetClass) {
+      // Remove comment lines starting with //
+      const cleaned = rawText
+        .split(/\r?\n/)
+        .filter(line => !line.trim().startsWith("//"))
+        .join("\n");
+
+      const parsed = [];
+      // Match blocks: Question text { answer block }
+      const blockRegex = /([^{}]+?)\{([^{}]+)\}/g;
+      let match;
+      while ((match = blockRegex.exec(cleaned)) !== null) {
+        let qText = match[1].trim();
+        // Strip optional Moodle ::Title:: prefix and [html]/[markdown] tags
+        qText = qText.replace(/^::.*?::\s*/s, "").replace(/^\[(html|markdown|plain|moodle)\]\s*/i, "").trim();
+        const body = match[2].trim();
+
+        // Extract general feedback (####...) if present
+        let sol = "Review the step-by-step concept for this question.";
+        let choicesPart = body;
+        const fbIndex = body.indexOf("####");
+        if (fbIndex !== -1) {
+          sol = body.slice(fbIndex + 4).trim() || sol;
+          choicesPart = body.slice(0, fbIndex).trim();
+        }
+
+        // Tokenize choices starting with = (correct) or ~ (wrong)
+        const choiceRegex = /([=~])\s*([^=~#]+)/g;
+        const options = [];
+        let ansIndex = 0;
+        let cMatch;
+        while ((cMatch = choiceRegex.exec(choicesPart)) !== null) {
+          const prefix = cMatch[1];
+          // Strip optional inline option feedback (#...) or percentage weights (%100%)
+          let optText = cMatch[2].split("#")[0].replace(/^%-?\d+(\.\d+)?%/, "").trim();
+          if (!optText) continue;
+          if (prefix === "=") ansIndex = options.length;
+          options.push(optText);
+        }
+
+        if (qText && options.length >= 2) {
+          while (options.length < 4) options.push("None of the above");
+          parsed.push({
+            id: "q_" + Date.now() + "_" + parsed.length,
+            targetClass: defaultTargetClass,
+            q: qText,
+            options: options.slice(0, 4),
+            ans: Math.min(ansIndex, 3),
+            sol
+          });
+        }
+      }
+      return parsed;
+    }
+
+    function parseAikenQuestions(rawText, defaultTargetClass) {
+      const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      const parsed = [];
+      let currentQ = "";
+      let opts = {};
+      let ans = null;
+      let sol = "";
+
+      const flush = () => {
+        if (currentQ && opts.A && opts.B && ans !== null) {
+          parsed.push({
+            id: "q_" + Date.now() + "_" + parsed.length,
+            targetClass: defaultTargetClass,
+            q: currentQ,
+            options: [opts.A, opts.B, opts.C || "N/A", opts.D || "N/A"],
+            ans,
+            sol: sol || "Review the worked steps for this question."
+          });
+        }
+        currentQ = "";
+        opts = {};
+        ans = null;
+        sol = "";
+      };
+
+      lines.forEach(line => {
+        const optMatch = line.match(/^([A-D])[.)]\s*(.+)$/i);
+        const ansMatch = line.match(/^ANSWER:\s*([A-D])/i);
+        const solMatch = line.match(/^(?:SOLUTION|FEEDBACK|EXPLANATION):\s*(.+)$/i);
+
+        if (optMatch) {
+          opts[optMatch[1].toUpperCase()] = optMatch[2].trim();
+        } else if (ansMatch) {
+          ans = letters.indexOf(ansMatch[1].toUpperCase());
+        } else if (solMatch) {
+          sol = solMatch[1].trim();
+        } else {
+          if (ans !== null) flush();
+          currentQ = currentQ ? `${currentQ} ${line}` : line;
+        }
+      });
+      flush();
+      return parsed;
+    }
+
+    function handleQuizImportFile(file) {
+      const assigned = getTeacherAssignedClasses();
+      if (!assigned.length) {
+        return showToast("Ask Admin to assign your classes before importing questions.", "error");
+      }
+      const selectedTargetClass = document.getElementById("bulkQTargetClass").value || assigned[0];
+      const ext = file.name.split(".").pop().toLowerCase();
+
+      if (["xlsx", "xls", "csv"].includes(ext)) {
+        if (typeof XLSX === "undefined") {
+          return showToast("Spreadsheet parser is still loading. Try again in a moment.", "error");
+        }
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          try {
+            const wb = XLSX.read(new Uint8Array(evt.target.result), { type: "array" });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+            const imported = [];
+
+            rows.forEach((row, i) => {
+              const keys = Object.keys(row);
+              const qKey = keys.find(k => /question|prompt|item/i.test(k)) || keys[0];
+              const aKey = keys.find(k => /option\s*a|^a$/i.test(k)) || keys[1];
+              const bKey = keys.find(k => /option\s*b|^b$/i.test(k)) || keys[2];
+              const cKey = keys.find(k => /option\s*c|^c$/i.test(k)) || keys[3];
+              const dKey = keys.find(k => /option\s*d|^d$/i.test(k)) || keys[4];
+              const ansKey = keys.find(k => /answer|correct|key/i.test(k)) || keys[5];
+              const solKey = keys.find(k => /sol|explain|work|step|feedback/i.test(k)) || keys[6];
+              const clsKey = keys.find(k => /class|form|grade/i.test(k));
+
+              const qText = String(row[qKey] || "").trim();
+              const optA = String(row[aKey] || "").trim();
+              const optB = String(row[bKey] || "").trim();
+              const optC = String(row[cKey] || "").trim();
+              const optD = String(row[dKey] || "").trim();
+              if (!qText || !optA || !optB) return;
+
+              const options = [optA, optB, optC || "N/A", optD || "N/A"];
+              const ansIdx = parseCorrectAnswerIndex(row[ansKey], options);
+              const solText = String(row[solKey] || "").trim() || "Review the step-by-step solution for this question.";
+              const rowClass = clsKey && String(row[clsKey]).trim() ? String(row[clsKey]).trim() : selectedTargetClass;
+
+              imported.push({
+                id: "q_" + Date.now() + "_" + i,
+                targetClass: rowClass,
+                q: qText,
+                options,
+                ans: ansIdx,
+                sol: solText
+              });
+            });
+
+            finalizeImportedQuestions(imported, file.name, selectedTargetClass);
+          } catch (err) {
+            console.error(err);
+            showToast("Could not parse Excel/CSV file. Check column headers.", "error");
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        // Text-based quiz files: .gift, .txt (GIFT or Aiken), .json
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          try {
+            const content = String(evt.target.result || "");
+            let imported = [];
+
+            if (ext === "json") {
+              const rawJson = JSON.parse(content);
+              const arr = Array.isArray(rawJson) ? rawJson : (rawJson.questions || []);
+              arr.forEach((item, i) => {
+                if (!item.q && !item.question) return;
+                const opts = item.options || [item.a, item.b, item.c, item.d].filter(Boolean);
+                if (opts.length < 2) return;
+                while (opts.length < 4) opts.push("N/A");
+                imported.push({
+                  id: "q_" + Date.now() + "_" + i,
+                  targetClass: item.targetClass || selectedTargetClass,
+                  q: String(item.q || item.question).trim(),
+                  options: opts.slice(0, 4).map(String),
+                  ans: typeof item.ans === "number" ? item.ans : parseCorrectAnswerIndex(item.ans ?? item.answer, opts),
+                  sol: String(item.sol || item.solution || "Review worked steps.").trim()
+                });
+              });
+            } else {
+              // Try Moodle GIFT first if braces `{` and `}` exist; otherwise try Aiken format
+              if (content.includes("{") && content.includes("}")) {
+                imported = parseGiftQuestions(content, selectedTargetClass);
+              }
+              if (!imported.length) {
+                imported = parseAikenQuestions(content, selectedTargetClass);
+              }
+            }
+
+            finalizeImportedQuestions(imported, file.name, selectedTargetClass);
+          } catch (err) {
+            console.error(err);
+            showToast("Could not parse quiz file. Check GIFT, Aiken, or JSON syntax.", "error");
+          }
+        };
+        reader.readAsText(file);
+      }
+    }
+
+    function finalizeImportedQuestions(imported, fileName, targetClassLabel) {
+      if (!imported.length) {
+        return showToast("No valid multiple-choice questions were found in that file.", "error");
+      }
+      state.questions.push(...imported);
+      saveBranch("questions", state.questions);
+      addLog(session.name, `Bulk imported ${imported.length} questions from ${fileName} into ${targetClassLabel}`);
+
+      const msg = `Imported ${imported.length} question(s) from "${fileName}" into ${targetClassLabel}!`;
+      const banner = document.getElementById("quizImportSummary");
+      banner.textContent = msg;
+      banner.classList.remove("hidden");
+
+      renderTeacherDashboard();
+      showToast(msg, "success");
     }
 
     function renderTeacherAnalytics() {
