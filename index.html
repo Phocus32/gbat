@@ -557,7 +557,7 @@
       <div class="brand-badge">GBAT</div>
       <div>
         <div class="brand-title">GBAT Online Assessment Portal</div>
-        <div class="brand-sub">Mathematics Mock • Admin, Teacher &amp; Student System</div>
+        <div class="brand-sub">Multi-Subject Assessment • Admin, Teacher &amp; Student System</div>
       </div>
     </div>
     <div class="nav-right">
@@ -640,7 +640,20 @@
         <div class="kpi-card"><div class="kpi-label">Exam Attempts Used</div><div class="kpi-value" id="stuKpiAttempts">0</div></div>
         <div class="kpi-card"><div class="kpi-label">Average Score</div><div class="kpi-value" id="stuKpiAvg">0%</div></div>
         <div class="kpi-card"><div class="kpi-label">Best Score</div><div class="kpi-value" id="stuKpiBest">0%</div></div>
-        <div class="kpi-card"><div class="kpi-label" id="stuKpiQsLabel">Class Questions</div><div class="kpi-value" id="stuKpiQs">0</div></div>
+        <div class="kpi-card"><div class="kpi-label" id="stuKpiQsLabel">Subject Questions</div><div class="kpi-value" id="stuKpiQs">0</div></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h3 style="margin:0;">Choose Your Subject</h3>
+            <p id="stuSubjectHint" style="color:var(--muted); font-size:0.86rem; margin:4px 0 0;"></p>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="badge b-warn hidden" id="stuAssignBadge">📌 Teacher Assigned</span>
+            <select id="stuSubjectSelect" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:#fff; font-weight:600;"></select>
+          </div>
+        </div>
       </div>
 
       <div class="card">
@@ -650,8 +663,8 @@
 
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-          <h3 style="margin:0;" id="stuQuizTitle">GBAT Mathematics Assessment</h3>
-          <span class="badge b-blue">🔀 Class-Specific &amp; Auto-Shuffled</span>
+          <h3 style="margin:0;" id="stuQuizTitle">GBAT Assessment</h3>
+          <span class="badge b-blue">🔀 Subject &amp; Class-Specific • Auto-Shuffled</span>
         </div>
         <p style="color:var(--muted); margin:10px 0 16px;" id="stuQuizDesc"></p>
         <div id="stuQuizControls" style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -670,7 +683,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Date</th><th>Class</th><th>Mode</th><th>Score</th><th>Percentage</th><th>Action</th></tr>
+              <tr><th>Date</th><th>Subject</th><th>Class</th><th>Mode</th><th>Score</th><th>Percentage</th><th>Action</th></tr>
             </thead>
             <tbody id="stuHistoryBody"></tbody>
           </table>
@@ -748,7 +761,7 @@
       </div>
 
       <div id="teacherNoClassWarning" class="card hidden" style="border-left:5px solid var(--warn); background:var(--warn-bg);">
-        <strong>No Classes Assigned Yet:</strong> Ask the Administrator to assign your classes (e.g., Basic 8 or Basic 9) under <em>Admin Dashboard → Users, Teacher Classes &amp; Excel</em> so you can view submissions and manage your class question bank.
+        <strong>No Classes or Subjects Assigned Yet:</strong> Ask the Administrator to assign your classes (e.g., Basic 8 or Basic 9) and subjects (e.g., Mathematics, English) under <em>Admin Dashboard → Users &amp; Subjects</em> so you can view submissions and manage your subject question banks.
       </div>
 
       <div class="kpi-grid">
@@ -761,7 +774,8 @@
       <div class="sub-tabs" id="teacherTabs">
         <button class="sub-tab active" data-tab="tSubs">Student Submissions</button>
         <button class="sub-tab" data-tab="tAnalytics">Question Analytics</button>
-        <button class="sub-tab" data-tab="tQuestions">Class Question Bank</button>
+        <button class="sub-tab" data-tab="tQuestions">Subject Question Bank</button>
+        <button class="sub-tab" data-tab="tAssignments">Assigned Subject Quizzes</button>
         <button class="sub-tab" data-tab="tNotices">Announcements</button>
         <button class="sub-tab" data-tab="tSecurity">Reset My Password</button>
       </div>
@@ -779,13 +793,16 @@
             <select id="tClassFilter" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:#fff;">
               <option value="">All My Assigned Classes</option>
             </select>
+            <select id="tSubjectFilter" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:#fff;">
+              <option value="">All My Assigned Subjects</option>
+            </select>
             <input type="text" id="tSearchInput" placeholder="Search student name..." style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; width:210px;" />
           </div>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Student Name</th><th>Class</th><th>Mode</th><th>Score</th><th>%</th><th>Integrity</th><th>Date</th><th>Review</th></tr>
+              <tr><th>Student Name</th><th>Subject</th><th>Class</th><th>Mode</th><th>Score</th><th>%</th><th>Integrity</th><th>Date</th><th>Review</th></tr>
             </thead>
             <tbody id="tSubsBody"></tbody>
           </table>
@@ -799,12 +816,15 @@
             <h3 style="margin:0;">Item Analysis (Exam Mode Accuracy per Question)</h3>
             <p style="color:var(--muted); font-size:0.88rem; margin:4px 0 0;">Scoped strictly to your assigned classes and official Exam Mode attempts.</p>
           </div>
-          <select id="tAnalyticsClassFilter" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:#fff;"></select>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <select id="tAnalyticsClassFilter" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:#fff;"></select>
+            <select id="tAnalyticsSubjectFilter" style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:#fff;"></select>
+          </div>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>#</th><th>Target Class</th><th>Question</th><th>Attempts</th><th>Correct</th><th>Accuracy</th></tr>
+              <tr><th>#</th><th>Subject</th><th>Target Class</th><th>Question</th><th>Attempts</th><th>Correct</th><th>Accuracy</th></tr>
             </thead>
             <tbody id="tAnalyticsBody"></tbody>
           </table>
@@ -817,10 +837,11 @@
           <div>
             <h3 style="margin:0;">Bulk Import Questions (GIFT, Excel, CSV, Aiken TXT, JSON)</h3>
             <p style="color:var(--muted); font-size:0.88rem; margin:4px 0 0;">
-              Appends questions directly to your selected class bank without erasing existing questions or student records.
+              Appends questions directly to your selected subject &amp; class bank without erasing existing questions or student records.
             </p>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <select id="bulkQTargetSubject" style="padding:7px 11px; border:1px solid var(--border); border-radius:8px; background:#fff; font-weight:600;"></select>
             <select id="bulkQTargetClass" style="padding:7px 11px; border:1px solid var(--border); border-radius:8px; background:#fff; font-weight:600;"></select>
             <button class="btn btn-outline btn-sm" id="downloadQTemplateBtn">⬇ Download Excel Question Template (.xlsx)</button>
           </div>
@@ -838,11 +859,15 @@
 
         <hr style="border:none; border-top:1px solid var(--border); margin:24px 0;" />
 
-        <h3 style="margin-top:0;">Add Single Question to Specific Class Bank</h3>
+        <h3 style="margin-top:0;">Add Single Question to a Subject &amp; Class Bank</h3>
         <div class="form-grid">
           <div class="field" style="grid-column: span 2;">
             <label>Question Text</label>
-            <input type="text" id="newQText" placeholder="Enter math question..." />
+            <input type="text" id="newQText" placeholder="Enter question text..." />
+          </div>
+          <div class="field">
+            <label>Assign to Subject</label>
+            <select id="newQSubject"></select>
           </div>
           <div class="field">
             <label>Assign to Class (Prevents Cross-Class Mixing)</label>
@@ -867,27 +892,52 @@
             <textarea id="newQSol" rows="2" placeholder="Explain each step clearly..."></textarea>
           </div>
         </div>
-        <button class="btn btn-primary" id="addQuestionBtn">+ Add Question to Class Bank</button>
+        <button class="btn btn-primary" id="addQuestionBtn">+ Add Question to Subject Bank</button>
 
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:26px; margin-bottom:12px;">
           <h3 style="margin:0;">Question Bank (<span id="qBankCount">0</span> shown)</h3>
           <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <select id="tBankSubjectFilter" style="padding:7px 11px; border:1px solid var(--border); border-radius:8px; background:#fff;"></select>
             <select id="tBankClassFilter" style="padding:7px 11px; border:1px solid var(--border); border-radius:8px; background:#fff;"></select>
             <button class="btn btn-secondary btn-sm" id="shuffleBankBtn">🔀 Shuffle Filtered Bank &amp; Save</button>
           </div>
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>#</th><th>Class</th><th>Question</th><th>Correct</th><th>Reorder / Action</th></tr></thead>
+            <thead><tr><th>#</th><th>Subject</th><th>Class</th><th>Question</th><th>Correct</th><th>Reorder / Action</th></tr></thead>
             <tbody id="tQuestionsBody"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- T4: Announcements -->
+      <!-- T4: Teacher-Pinned Subject Quizzes -->
+      <div class="card hidden" id="tAssignments">
+        <h3 style="margin-top:0;">Pin a Subject Quiz for Your Students</h3>
+        <p style="color:var(--muted); font-size:0.88rem; margin:4px 0 14px;">
+          Pinned subjects appear as <strong>Teacher Assigned</strong> on the student dashboard. Students may still choose any other available subject for their class.
+        </p>
+        <div class="form-grid">
+          <div class="field">
+            <label>Subject</label>
+            <select id="assignSubjectSelect"></select>
+          </div>
+          <div class="field">
+            <label>Target Class</label>
+            <select id="assignClassSelect"></select>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="pinQuizBtn">📌 Pin Quiz for Students</button>
+        <div id="assignmentList" style="margin-top:20px;"></div>
+      </div>
+
+      <!-- T5: Announcements -->
       <div class="card hidden" id="tNotices">
         <h3 style="margin-top:0;">Post Class Announcement</h3>
         <div class="form-grid">
+          <div class="field">
+            <label>Subject</label>
+            <select id="newNoticeSubject"></select>
+          </div>
           <div class="field">
             <label>Target Class</label>
             <select id="newNoticeClass"></select>
@@ -938,7 +988,8 @@
 
       <div class="sub-tabs" id="adminTabs">
         <button class="sub-tab active" data-tab="aClasses">Classes &amp; Passwords</button>
-        <button class="sub-tab" data-tab="aUsers">Users, Teacher Classes &amp; Excel</button>
+        <button class="sub-tab" data-tab="aSubjects">Subjects</button>
+        <button class="sub-tab" data-tab="aUsers">Users, Teacher Subject &amp; Class Assignments</button>
         <button class="sub-tab" data-tab="aSettings">Exam, Practice &amp; Security Controls</button>
         <button class="sub-tab" data-tab="aLogs">Activity Logs &amp; Backup</button>
       </div>
@@ -971,6 +1022,21 @@
         <span id="aPassSavedMsg" style="margin-left:10px; color:var(--success); font-weight:600;"></span>
       </div>
 
+      <!-- A0B: Global Subject Management -->
+      <div class="card hidden" id="aSubjects">
+        <h3 style="margin-top:0;">Manage Registered Subjects</h3>
+        <p style="color:var(--muted); font-size:0.9rem; margin-top:-6px;">
+          Subjects are global (e.g., Mathematics, English Language, Science). Question banks, teacher assignments, quizzes and reports are all organised by these subject IDs.
+        </p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; max-width:620px;">
+          <input type="text" id="aNewSubjectId" placeholder="Subject ID (e.g. math, eng, sci)" style="flex:1; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:0.94rem;" />
+          <input type="text" id="aNewSubjectName" placeholder="Display name (e.g. Mathematics)" style="flex:1; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:0.94rem;" />
+          <button class="btn btn-primary" id="aAddSubjectBtn">+ Add Subject</button>
+        </div>
+        <div class="tag-list" id="aSubjectList" style="margin-top:14px;"></div>
+        <p style="color:var(--muted); font-size:0.82rem; margin-top:12px;">Removing a subject also removes its questions, pinned quizzes and subject assignments. Existing attempts are kept for historical reporting.</p>
+      </div>
+
       <!-- A1: Users, Teacher Class Assignments & Bulk Excel Upload -->
       <div class="card hidden" id="aUsers">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
@@ -991,7 +1057,7 @@
 
         <hr style="border:none; border-top:1px solid var(--border); margin:24px 0;" />
 
-        <h3 style="margin-top:0;">Add Teacher (with Assigned Classes) or Student</h3>
+        <h3 style="margin-top:0;">Add Teacher (with Assigned Classes &amp; Subjects) or Student</h3>
         <div class="form-grid">
           <div class="field"><label>Full Name</label><input type="text" id="aNewName" placeholder="e.g. Mr. Kwesi Appiah" /></div>
           <div class="field">
@@ -1014,12 +1080,16 @@
           <label>Assign Classes This Teacher Can Manage &amp; View</label>
           <div class="checkbox-group" id="aNewTeacherClassCheckboxes"></div>
         </div>
+        <div class="field" id="aNewTeacherSubjectsWrap">
+          <label>Assign Subjects This Teacher Can Set Quizzes For</label>
+          <div class="checkbox-group" id="aNewTeacherSubjectCheckboxes"></div>
+        </div>
         <button class="btn btn-primary" id="aAddUserBtn">+ Create User</button>
 
         <h3 style="margin-top:24px;">All Portal Accounts (<span id="aUserCount">0</span>)</h3>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Name</th><th>Role</th><th>Class / Assigned Classes</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Name</th><th>Role</th><th>Assigned Classes &amp; Subjects</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="aUsersBody"></tbody>
           </table>
         </div>
@@ -1111,12 +1181,15 @@
   <!-- Modal for Editing Teacher Assigned Classes -->
   <div class="modal-backdrop hidden" id="editTeacherModal">
     <div class="modal-card">
-      <h3 style="margin-top:0;" id="editTeacherModalTitle">Assign Classes to Teacher</h3>
-      <p style="color:var(--muted); font-size:0.88rem;">Select which classes this teacher can access in their dashboard:</p>
-      <div class="checkbox-group" id="editTeacherClassBoxes" style="margin-bottom:18px;"></div>
+      <h3 style="margin-top:0;" id="editTeacherModalTitle">Assign Classes &amp; Subjects to Teacher</h3>
+      <p style="color:var(--muted); font-size:0.88rem;">Select the classes and subjects this teacher can manage in their dashboard:</p>
+      <label style="font-weight:700; font-size:0.86rem;">Classes</label>
+      <div class="checkbox-group" id="editTeacherClassBoxes" style="margin-bottom:14px;"></div>
+      <label style="font-weight:700; font-size:0.86rem;">Subjects</label>
+      <div class="checkbox-group" id="editTeacherSubjectBoxes" style="margin-bottom:18px;"></div>
       <div style="display:flex; justify-content:flex-end; gap:8px;">
         <button class="btn btn-secondary btn-sm" id="closeEditTeacherModalBtn">Cancel</button>
-        <button class="btn btn-primary btn-sm" id="saveEditTeacherClassesBtn">Save Class Assignment</button>
+        <button class="btn btn-primary btn-sm" id="saveEditTeacherClassesBtn">Save Assignment</button>
       </div>
     </div>
   </div>
@@ -1166,6 +1239,17 @@
     const letters = ["A", "B", "C", "D"];
     const EXAM_STORAGE_KEY = "gbat_active_exam_v2";
 
+    // Stable IDs keep questions, assignments and results tied to a subject even
+    // if an admin later edits the display name.
+    const FALLBACK_SUBJECTS = [
+      { id: "math", name: "Mathematics", active: true },
+      { id: "eng", name: "English Language", active: true },
+      { id: "sci", name: "Science", active: true }
+    ];
+    const LEGACY_SUBJECT_ID = "math";
+    const ALL_CLASSES = "ALL";
+    const ALL_SUBJECTS = "ALL";
+
     /* ---------------- CRYPTO & SANITIZATION HELPERS ---------------- */
     async function sha256(str) {
       const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
@@ -1174,6 +1258,28 @@
 
     function normalizeName(raw) {
       return String(raw || "").replace(/\s+/g, " ").trim();
+    }
+
+    function getSubject(subjectId) {
+      return state.subjects.find(s => s.id === subjectId) || null;
+    }
+
+    function getSubjectName(subjectId, fallback) {
+      if (!subjectId || subjectId === ALL_SUBJECTS) return fallback || "All Subjects";
+      const s = getSubject(subjectId);
+      return s ? s.name : (fallback || subjectId);
+    }
+
+    function activeSubjects() {
+      return state.subjects.filter(s => s.active !== false);
+    }
+
+    function isClassMatch(targetClass, studentClass) {
+      return !targetClass || targetClass === ALL_CLASSES || targetClass === studentClass;
+    }
+
+    function isSubjectMatch(targetSubject, subjectId) {
+      return !targetSubject || targetSubject === ALL_SUBJECTS || targetSubject === subjectId;
     }
 
     function showToast(message, type = "info") {
@@ -1260,14 +1366,17 @@
     function getDefaultState() {
       return {
         classes: ["Basic 8", "Basic 9"],
+        subjects: JSON.parse(JSON.stringify(FALLBACK_SUBJECTS)),
         users: [
-          { id: "t1", name: "Mr. Samuel Tetteh", role: "teacher", code: "TCH-001", assignedClasses: ["Basic 8"], passwordHash: "", active: true },
-          { id: "t2", name: "Ms. Linda Owusu", role: "teacher", code: "TCH-002", assignedClasses: ["Basic 9"], passwordHash: "", active: true }
+          { id: "t1", name: "Mr. Samuel Tetteh", role: "teacher", code: "TCH-001", assignedClasses: ["Basic 8"], assignedSubjects: ["math"], passwordHash: "", active: true },
+          { id: "t2", name: "Ms. Linda Owusu", role: "teacher", code: "TCH-002", assignedClasses: ["Basic 9"], assignedSubjects: ["math"], passwordHash: "", active: true }
         ],
-        questions: JSON.parse(JSON.stringify(defaultQuestions)),
+        // The seeded bank is Mathematics; mark it so legacy data stays visible.
+        questions: JSON.parse(JSON.stringify(defaultQuestions)).map(q => ({ ...q, subject: LEGACY_SUBJECT_ID })),
         submissions: [],
+        assignments: [],
         announcements: [
-          { id: "n1", targetClass: "ALL", text: "Welcome to GBAT Nov 2026 Mock Prep! Complete your assessment and review every worked solution after submission.", author: "Principal Admin", date: "17/11/2026" }
+          { id: "n1", subject: ALL_SUBJECTS, targetClass: ALL_CLASSES, text: "Welcome to GBAT Nov 2026 Mock Prep! Choose your subject, complete the assessment, and review every worked solution after submission.", author: "Principal Admin", date: "17/11/2026" }
         ],
         settings: {
           quizOpen: true,
@@ -1356,12 +1465,22 @@
     }
 
     function hydrateStateFromSnapshot(data) {
+      // Subjects first: every other branch is normalised against the registered IDs.
+      const rawSubjects = Array.isArray(data.subjects) ? data.subjects : Object.values(data.subjects || {});
+      const loadedSubjects = rawSubjects
+        .filter(s => s && typeof s === "object" && s.id)
+        .map(s => ({ ...s, active: s.active !== false }));
+      const subjects = loadedSubjects.length ? loadedSubjects : JSON.parse(JSON.stringify(FALLBACK_SUBJECTS));
+      const subjectIds = subjects.map(s => s.id);
+      const legacySubjectId = subjectIds.includes(LEGACY_SUBJECT_ID) ? LEGACY_SUBJECT_ID : (subjectIds[0] || LEGACY_SUBJECT_ID);
+
       const loadedQuestions = (Array.isArray(data.questions) ? data.questions : Object.values(data.questions || defaultQuestions))
         .filter(Boolean)
         .map((q, idx) => ({
           ...q,
           id: q.id || `q_legacy_${idx}`,
-          targetClass: q.targetClass || "ALL"
+          subject: q.subject || legacySubjectId,
+          targetClass: q.targetClass || ALL_CLASSES
         }));
 
       const rawUsers = Array.isArray(data.users) ? data.users : Object.values(data.users || {});
@@ -1375,33 +1494,56 @@
           };
           if (normalized.role === "teacher") {
             normalized.assignedClasses = Array.isArray(u.assignedClasses) ? u.assignedClasses : [];
+            // A teacher from the old single-subject build keeps access to all subjects;
+            // an explicitly saved [] means the admin deliberately removed all subjects.
+            normalized.assignedSubjects = Array.isArray(u.assignedSubjects)
+              ? u.assignedSubjects.filter(id => subjectIds.includes(id))
+              : subjectIds.slice();
           } else {
-            // Students must not carry an undefined assignedClasses key: Firebase rejects
+            // Students must not carry undefined assignment keys: Firebase rejects
             // the whole users write when it sees one, which froze rename/delete/suspend.
             delete normalized.assignedClasses;
+            delete normalized.assignedSubjects;
           }
           return normalized;
         });
 
       let loadedSubs = [];
       if (Array.isArray(data.submissions)) {
-        loadedSubs = data.submissions.filter(Boolean);
+        loadedSubs = data.submissions.filter(Boolean).map(s => ({ ...s, subject: s.subject || legacySubjectId }));
       } else if (data.submissions && typeof data.submissions === "object") {
-        loadedSubs = Object.entries(data.submissions).map(([fbKey, val]) => ({ fbKey, ...val }));
+        loadedSubs = Object.entries(data.submissions).map(([fbKey, val]) => ({
+          fbKey, ...val, subject: (val && val.subject) || legacySubjectId
+        }));
       }
 
       const loadedNotices = (Array.isArray(data.announcements) ? data.announcements : Object.values(data.announcements || {}))
         .filter(Boolean)
         .map(n => ({
           ...n,
-          targetClass: n.targetClass || "ALL"
+          subject: n.subject || ALL_SUBJECTS,
+          targetClass: n.targetClass || ALL_CLASSES
         }));
+
+      const rawAssignments = Array.isArray(data.assignments) ? data.assignments : Object.values(data.assignments || {});
+      const loadedAssignments = rawAssignments
+        .filter(Boolean)
+        .map((a, idx) => ({
+          ...a,
+          id: a.id || `asg_legacy_${idx}`,
+          subjectId: a.subjectId || legacySubjectId,
+          targetClass: a.targetClass || ALL_CLASSES,
+          active: a.active !== false
+        }))
+        .filter(a => subjectIds.includes(a.subjectId));
 
       state = {
         classes: Array.isArray(data.classes) && data.classes.length ? data.classes : ["Basic 8", "Basic 9"],
+        subjects,
         users: loadedUsers,
         questions: loadedQuestions,
         submissions: loadedSubs,
+        assignments: loadedAssignments,
         announcements: loadedNotices,
         settings: {
           quizOpen: true,
@@ -1491,7 +1633,10 @@
         const opt = document.createElement("option");
         opt.value = t.id;
         const clsTag = (t.assignedClasses && t.assignedClasses.length) ? ` — [${t.assignedClasses.join(", ")}]` : " — [No Classes]";
-        opt.textContent = `${t.name} (${t.code})${clsTag}`;
+        const subjTag = (t.assignedSubjects && t.assignedSubjects.length)
+          ? ` [${t.assignedSubjects.map(id => getSubjectName(id, id)).join(", ")}]`
+          : " [No Subjects]";
+        opt.textContent = `${t.name} (${t.code})${clsTag}${subjTag}`;
         tSel.appendChild(opt);
       });
       if (curT) tSel.value = curT;
@@ -1545,6 +1690,20 @@
         if (previouslyChecked.includes(cls)) cb.checked = true;
         lbl.append(cb, document.createTextNode(cls));
         boxWrap.appendChild(lbl);
+      });
+
+      const subjWrap = document.getElementById("aNewTeacherSubjectCheckboxes");
+      const prevSubjects = Array.from(subjWrap.querySelectorAll("input:checked")).map(i => i.value);
+      subjWrap.innerHTML = "";
+      activeSubjects().forEach(s => {
+        const lbl = document.createElement("label");
+        lbl.className = "checkbox-pill";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.value = s.id;
+        if (prevSubjects.includes(s.id)) cb.checked = true;
+        lbl.append(cb, document.createTextNode(s.name));
+        subjWrap.appendChild(lbl);
       });
     }
 
@@ -1620,10 +1779,13 @@
       }
 
       session = { id: userId, role: "student", name: existing ? existing.name : name, code: studentClass };
-      addLog(session.name, `Signed into Student Dashboard (${studentClass})`);
+      const availableAtLogin = getStudentAvailableSubjects();
+      const pinnedAtLogin = availableAtLogin.find(s => isSubjectPinnedForClass(s.id, studentClass));
+      session.subject = pinnedAtLogin ? pinnedAtLogin.id : (availableAtLogin[0] ? availableAtLogin[0].id : "");
+      addLog(session.name, `Signed into Student Dashboard (${studentClass}${session.subject ? ` • ${getSubjectName(session.subject, session.subject)}` : ""})`);
       setNavSession();
 
-      const savedExam = loadSavedExamState(session.name, session.code);
+      const savedExam = loadSavedExamState(session.name, session.code, session.subject);
       if (savedExam) {
         showToast("Resuming your in-progress timed exam!", "info");
         resumeExamFromStorage(savedExam);
@@ -1674,7 +1836,8 @@
         role: "teacher",
         name: teacher.name,
         code: teacher.code,
-        assignedClasses: Array.isArray(teacher.assignedClasses) ? teacher.assignedClasses : []
+        assignedClasses: Array.isArray(teacher.assignedClasses) ? teacher.assignedClasses : [],
+        assignedSubjects: Array.isArray(teacher.assignedSubjects) ? teacher.assignedSubjects : []
       };
       addLog(teacher.name, "Logged into Teacher Dashboard");
       setNavSession();
@@ -1713,36 +1876,90 @@
     };
 
     /* ---------------- STUDENT DASHBOARD ---------------- */
-    function getQuestionsForClass(studentClass) {
-      return state.questions.filter(q => !q.targetClass || q.targetClass === "ALL" || q.targetClass === studentClass);
+    function getQuestionsForSubject(subjectId, studentClass) {
+      return state.questions.filter(q =>
+        (q.subject || LEGACY_SUBJECT_ID) === subjectId && isClassMatch(q.targetClass, studentClass)
+      );
+    }
+
+    function isSubjectPinnedForClass(subjectId, studentClass) {
+      return state.assignments.some(a =>
+        a.active !== false && a.subjectId === subjectId && isClassMatch(a.targetClass, studentClass)
+      );
+    }
+
+    function getStudentAvailableSubjects() {
+      if (!session || session.role !== "student") return [];
+      return activeSubjects().filter(s =>
+        getQuestionsForSubject(s.id, session.code).length > 0 || isSubjectPinnedForClass(s.id, session.code)
+      );
     }
 
     function renderStudentDashboard() {
+      const available = getStudentAvailableSubjects();
+      if (!available.some(s => s.id === session.subject)) {
+        const pinned = available.find(s => isSubjectPinnedForClass(s.id, session.code));
+        session.subject = pinned ? pinned.id : (available[0] ? available[0].id : "");
+      }
+      const subjectId = session.subject;
+      const subjectName = getSubjectName(subjectId, subjectId || "No Subject");
+      const pinned = Boolean(subjectId && isSubjectPinnedForClass(subjectId, session.code));
+
       document.getElementById("stuWelcome").textContent = `Welcome, ${session.name}`;
-      document.getElementById("stuMeta").textContent = `Class: ${session.code} • GBAT Mathematics Mock`;
+      document.getElementById("stuMeta").textContent = `Class: ${session.code} • Subject: ${subjectName}`;
+
+      const subjSel = document.getElementById("stuSubjectSelect");
+      subjSel.innerHTML = "";
+      if (!available.length) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "No subjects available for your class";
+        subjSel.appendChild(opt);
+      } else {
+        available.forEach(s => {
+          const opt = document.createElement("option");
+          opt.value = s.id;
+          opt.textContent = isSubjectPinnedForClass(s.id, session.code) ? `${s.name} 📌` : s.name;
+          subjSel.appendChild(opt);
+        });
+        subjSel.value = subjectId;
+      }
+      subjSel.onchange = () => {
+        session.subject = subjSel.value;
+        renderStudentDashboard();
+      };
+      document.getElementById("stuAssignBadge").classList.toggle("hidden", !pinned);
+      document.getElementById("stuSubjectHint").textContent = !available.length
+        ? "Ask your teacher or administrator to assign a subject quiz for your class."
+        : pinned
+          ? `📌 ${subjectName} was pinned by your teacher for ${session.code}. You may also switch to another available subject.`
+          : `Choose a subject for ${session.code}. Your attempts and history are tracked separately for each subject.`;
 
       const mine = state.submissions.filter(s =>
         normalizeName(s.studentName).toLowerCase() === session.name.toLowerCase() &&
-        (s.studentClass || s.indexNumber) === session.code
+        (s.studentClass || s.indexNumber) === session.code &&
+        (s.subject || LEGACY_SUBJECT_ID) === subjectId
       );
       const examAttempts = mine.filter(s => s.mode === "Exam");
       const maxExams = Number(state.settings.maxExamAttempts ?? 1);
 
       const avg = mine.length ? Math.round(mine.reduce((a, b) => a + b.pct, 0) / mine.length) : 0;
       const best = mine.length ? Math.max(...mine.map(s => s.pct)) : 0;
-      const classQs = getQuestionsForClass(session.code);
+      const subjectQs = subjectId ? getQuestionsForSubject(subjectId, session.code) : [];
 
       document.getElementById("stuKpiAttempts").textContent = maxExams > 0 ? `${examAttempts.length} / ${maxExams}` : `${examAttempts.length}`;
       document.getElementById("stuKpiAvg").textContent = `${avg}%`;
       document.getElementById("stuKpiBest").textContent = `${best}%`;
-      document.getElementById("stuKpiQsLabel").textContent = `${session.code} Questions`;
-      document.getElementById("stuKpiQs").textContent = classQs.length;
+      document.getElementById("stuKpiQsLabel").textContent = `${subjectName} Questions`;
+      document.getElementById("stuKpiQs").textContent = subjectQs.length;
 
-      const relevantNotices = state.announcements.filter(a => !a.targetClass || a.targetClass === "ALL" || a.targetClass === session.code);
+      const relevantNotices = state.announcements.filter(a =>
+        isClassMatch(a.targetClass, session.code) && isSubjectMatch(a.subject, subjectId)
+      );
       const annBox = document.getElementById("stuAnnouncements");
       annBox.innerHTML = "";
       if (!relevantNotices.length) {
-        annBox.textContent = "No announcements for your class yet.";
+        annBox.textContent = "No announcements for this subject and class yet.";
       } else {
         relevantNotices.forEach(a => {
           const d = document.createElement("div");
@@ -1751,19 +1968,21 @@
           p.textContent = a.text;
           const m = document.createElement("div");
           m.className = "notice-meta";
-          m.textContent = `Posted by ${a.author} (${a.targetClass === "ALL" ? "All Classes" : a.targetClass}) • ${a.date}`;
+          const aSubj = (!a.subject || a.subject === ALL_SUBJECTS) ? "All Subjects" : getSubjectName(a.subject, a.subject);
+          const aCls = a.targetClass === ALL_CLASSES ? "All Classes" : a.targetClass;
+          m.textContent = `Posted by ${a.author} (${aSubj} • ${aCls}) • ${a.date}`;
           d.append(p, m);
           annBox.appendChild(d);
         });
       }
 
-      document.getElementById("stuQuizTitle").textContent = `${session.code} — GBAT Mathematics Assessment`;
+      document.getElementById("stuQuizTitle").textContent = `${subjectName} — ${session.code} Assessment`;
       document.getElementById("stuQuizDesc").textContent =
-        `Assigned Questions for ${session.code}: ${classQs.length} | Exam Duration: ${state.settings.examMinutes} minutes. Complete and submit the entire quiz to view your score and step-by-step worked solutions.`;
+        `Questions for ${subjectName} / ${session.code}: ${subjectQs.length} | Exam Duration: ${state.settings.examMinutes} minutes. Complete and submit the entire quiz to view your score and step-by-step worked solutions.`;
 
       const examOpen = Boolean(state.settings.quizOpen);
       const practiceOpen = state.settings.practiceOpen !== false;
-      const hasQuestions = classQs.length > 0;
+      const hasQuestions = subjectQs.length > 0;
       const anyModeAvailable = hasQuestions && (examOpen || practiceOpen);
 
       const practiceBtn = document.getElementById("startPracticeBtn");
@@ -1779,7 +1998,7 @@
       examBtn.classList.toggle("hidden", !examOpen);
 
       if (!hasQuestions) {
-        closedMsg.textContent = `No questions have been assigned to ${session.code} yet.`;
+        closedMsg.textContent = `No questions have been assigned for ${subjectName} to ${session.code} yet.`;
         modeStatusNote.classList.add("hidden");
       } else if (!examOpen && !practiceOpen) {
         closedMsg.textContent = "Both Practice Mode and Exam Mode are currently closed by the Administrator.";
@@ -1799,8 +2018,8 @@
         examBtn.disabled = true;
         limitMsg.classList.remove("hidden");
         limitMsg.textContent = practiceOpen
-          ? `You have used all ${maxExams} official Exam Mode attempt(s). You may still use Practice Mode if open.`
-          : `You have used all ${maxExams} official Exam Mode attempt(s).`;
+          ? `You have used all ${maxExams} official Exam Mode attempt(s) for ${subjectName}. You may still use Practice Mode if open.`
+          : `You have used all ${maxExams} official Exam Mode attempt(s) for ${subjectName}.`;
       } else {
         examBtn.disabled = false;
         limitMsg.classList.add("hidden");
@@ -1811,14 +2030,14 @@
       if (!mine.length) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = 6;
-        td.textContent = "You have not completed any attempt yet. Start the quiz above!";
+        td.colSpan = 7;
+        td.textContent = `You have no attempts for ${subjectName} yet. Start the quiz above!`;
         tr.appendChild(td);
         tbody.appendChild(tr);
       } else {
         mine.slice().reverse().forEach(sub => {
           const tr = document.createElement("tr");
-          [sub.date, sub.studentClass || sub.indexNumber || "-", sub.mode, `${sub.score} / ${sub.total}`, `${sub.pct}%`].forEach(val => {
+          [sub.date, getSubjectName(sub.subject, sub.subject || "-"), sub.studentClass || sub.indexNumber || "-", sub.mode, `${sub.score} / ${sub.total}`, `${sub.pct}%`].forEach(val => {
             const td = document.createElement("td");
             td.textContent = val;
             tr.appendChild(td);
@@ -1849,9 +2068,9 @@
     };
 
     /* ---------------- QUIZ ENGINE ---------------- */
-    function buildShuffledQuizItems(studentClass) {
+    function buildShuffledQuizItems(studentClass, subjectId) {
       const mode = state.settings.shuffleMode || "both";
-      const pool = getQuestionsForClass(studentClass);
+      const pool = getQuestionsForSubject(subjectId, studentClass);
       const indexed = pool.map((q, idx) => ({ q, origIdx: idx }));
       const ordered = (mode === "both" || mode === "questions") ? fisherYatesShuffle(indexed) : indexed;
 
@@ -1862,7 +2081,8 @@
         return {
           origIdx,
           qId: q.id || `q_${origIdx}`,
-          targetClass: q.targetClass || "ALL",
+          subject: subjectId,
+          targetClass: q.targetClass || ALL_CLASSES,
           q: q.q,
           svg: q.svg || "",
           options: finalPairs.map(p => p.text),
@@ -1877,6 +2097,7 @@
       const payload = {
         studentName: session.name,
         studentClass: session.code,
+        subject: session.subject,
         items: activeQuiz.items,
         current: activeQuiz.current,
         answers: activeQuiz.answers,
@@ -1887,7 +2108,7 @@
       localStorage.setItem(EXAM_STORAGE_KEY, JSON.stringify(payload));
     }
 
-    function loadSavedExamState(studentName, studentClass) {
+    function loadSavedExamState(studentName, studentClass, subjectId) {
       try {
         const raw = localStorage.getItem(EXAM_STORAGE_KEY);
         if (!raw) return null;
@@ -1895,6 +2116,7 @@
         if (
           parsed.studentName.toLowerCase() === studentName.toLowerCase() &&
           parsed.studentClass === studentClass &&
+          parsed.subject === subjectId &&
           parsed.endTimestamp > Date.now()
         ) {
           return parsed;
@@ -1905,8 +2127,9 @@
     }
 
     function startQuiz(mode) {
-      const items = buildShuffledQuizItems(session.code);
-      if (!items.length) return alert("No questions available for your class.");
+      if (!session.subject) return alert("Please choose a subject first.");
+      const items = buildShuffledQuizItems(session.code, session.subject);
+      if (!items.length) return alert(`No questions available for ${getSubjectName(session.subject, session.subject)} in ${session.code}.`);
 
       const durationMs = state.settings.examMinutes * 60 * 1000;
       activeQuiz = {
@@ -1997,7 +2220,8 @@
 
       document.getElementById("progressBar").style.width = `${(answered / qs.length) * 100}%`;
       document.getElementById("qBadge").textContent = `Question ${idx + 1} of ${qs.length}`;
-      document.getElementById("quizModeBadge").textContent = `${activeQuiz.mode} Mode`;
+      document.getElementById("quizModeBadge").textContent =
+        `${getSubjectName(session.subject, session.subject)} • ${activeQuiz.mode} Mode`;
       document.getElementById("answeredBadge").textContent = `${answered} of ${qs.length} answered`;
       document.getElementById("sideAnswered").textContent = `${answered} / ${qs.length}`;
       document.getElementById("sideRemain").textContent = qs.length - answered;
@@ -2123,6 +2347,7 @@
         id: "sub_" + Date.now(),
         studentName: session.name,
         studentClass: session.code,
+        subject: session.subject,
         mode: activeQuiz.mode,
         score,
         total,
@@ -2134,7 +2359,7 @@
       };
 
       pushSubmission(sub);
-      addLog(session.name, `Submitted ${activeQuiz.mode} Mode (${session.code} • ${score}/${total} • ${pct}%)`);
+      addLog(session.name, `Submitted ${getSubjectName(session.subject, session.subject)} ${activeQuiz.mode} Mode (${session.code} • ${score}/${total} • ${pct}%)`);
       activeQuiz = null;
       openResultView(sub, true);
     }
@@ -2144,7 +2369,8 @@
       showMissedOnly = false;
       document.getElementById("resMissedBtn").textContent = "Show Missed Only";
       const clsLabel = sub.studentClass || sub.indexNumber || "";
-      document.getElementById("resStudentTitle").textContent = `${sub.studentName} (${clsLabel}) — ${sub.mode} Mode`;
+      const subjLabel = getSubjectName(sub.subject, sub.subject || "General");
+      document.getElementById("resStudentTitle").textContent = `${sub.studentName} (${subjLabel} • ${clsLabel}) — ${sub.mode} Mode`;
       document.getElementById("resScoreBig").textContent = `${sub.score} / ${sub.total} (${sub.pct}%)`;
       document.getElementById("resRemark").textContent =
         sub.pct >= 80 ? "Excellent mastery! Review any missed questions below." :
@@ -2201,7 +2427,7 @@
       btn.onclick = () => {
         document.querySelectorAll("#teacherTabs .sub-tab").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
-        ["tSubs", "tAnalytics", "tQuestions", "tNotices", "tSecurity"].forEach(id =>
+        ["tSubs", "tAnalytics", "tQuestions", "tAssignments", "tNotices", "tSecurity"].forEach(id =>
           document.getElementById(id).classList.toggle("hidden", id !== btn.dataset.tab)
         );
       };
@@ -2213,64 +2439,88 @@
       return liveTeacher && Array.isArray(liveTeacher.assignedClasses) ? liveTeacher.assignedClasses : [];
     }
 
-    function renderTeacherDashboard() {
-      const assigned = getTeacherAssignedClasses();
-      document.getElementById("teacherMeta").textContent = assigned.length
-        ? `Signed in as ${session.name} (${session.code}) • Assigned Classes: ${assigned.join(", ")}`
-        : `Signed in as ${session.name} (${session.code}) • No classes assigned`;
+    function getTeacherAssignedSubjects() {
+      if (!session || session.role !== "teacher") return [];
+      const liveTeacher = state.users.find(u => u.id === session.id);
+      return liveTeacher && Array.isArray(liveTeacher.assignedSubjects) ? liveTeacher.assignedSubjects : [];
+    }
 
-      document.getElementById("teacherNoClassWarning").classList.toggle("hidden", assigned.length > 0);
+    function canTeacherManage(subjectId, classCode) {
+      if (!getTeacherAssignedSubjects().includes(subjectId)) return false;
+      const classes = getTeacherAssignedClasses();
+      if (!classes.length) return false;
+      if (!classCode || classCode === ALL_CLASSES) return true;
+      return classes.includes(classCode);
+    }
 
-      const tClsFilter = document.getElementById("tClassFilter");
-      const curSubFilter = tClsFilter.value;
-      tClsFilter.innerHTML = `<option value="">All My Classes (${assigned.join(", ") || "None"})</option>`;
-      assigned.forEach(c => {
-        const opt = document.createElement("option"); opt.value = c; opt.textContent = c; tClsFilter.appendChild(opt);
-      });
-      if (assigned.includes(curSubFilter)) tClsFilter.value = curSubFilter;
-
-      const tAnaFilter = document.getElementById("tAnalyticsClassFilter");
-      const curAnaFilter = tAnaFilter.value;
-      tAnaFilter.innerHTML = `<option value="">All My Assigned Classes</option>`;
-      assigned.forEach(c => {
-        const opt = document.createElement("option"); opt.value = c; opt.textContent = c; tAnaFilter.appendChild(opt);
-      });
-      if (assigned.includes(curAnaFilter)) tAnaFilter.value = curAnaFilter;
-
-      ["newQTargetClass", "bulkQTargetClass"].forEach(selId => {
-        const sel = document.getElementById(selId);
-        const curVal = sel.value;
-        sel.innerHTML = "";
-        assigned.forEach(c => {
-          const opt = document.createElement("option"); opt.value = c; opt.textContent = `${c} Only`; sel.appendChild(opt);
-        });
-        if (assigned.length > 1) {
-          const allOpt = document.createElement("option"); allOpt.value = "ALL"; allOpt.textContent = "All Classes (Shared)"; sel.appendChild(allOpt);
-        }
-        if (curVal) sel.value = curVal;
-      });
-
-      const bankFilter = document.getElementById("tBankClassFilter");
-      const curBankFilter = bankFilter.value;
-      bankFilter.innerHTML = `<option value="">All My Classes + Shared</option>`;
-      assigned.forEach(c => {
-        const opt = document.createElement("option"); opt.value = c; opt.textContent = `${c} Questions`; bankFilter.appendChild(opt);
-      });
-      const sharedOpt = document.createElement("option"); sharedOpt.value = "ALL"; sharedOpt.textContent = "Shared (All Classes)"; bankFilter.appendChild(sharedOpt);
-      if (curBankFilter) bankFilter.value = curBankFilter;
-
-      const noticeCls = document.getElementById("newNoticeClass");
-      noticeCls.innerHTML = "";
-      assigned.forEach(c => {
-        const opt = document.createElement("option"); opt.value = c; opt.textContent = c; noticeCls.appendChild(opt);
-      });
-      if (assigned.length > 1) {
-        const opt = document.createElement("option"); opt.value = "ALL"; opt.textContent = "All My Assigned Classes"; noticeCls.appendChild(opt);
+    function fillSelect(sel, entries, selected, placeholder) {
+      sel.innerHTML = "";
+      if (placeholder !== null && placeholder !== undefined) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = placeholder;
+        sel.appendChild(opt);
       }
+      entries.forEach(entry => {
+        const opt = document.createElement("option");
+        opt.value = entry.value;
+        opt.textContent = entry.label;
+        sel.appendChild(opt);
+      });
+      if (selected && entries.some(e => e.value === selected)) sel.value = selected;
+    }
+
+    function renderTeacherDashboard() {
+      const assignedClasses = getTeacherAssignedClasses();
+      const assignedSubjects = getTeacherAssignedSubjects();
+      const subjectOptions = activeSubjects()
+        .filter(s => assignedSubjects.includes(s.id))
+        .map(s => ({ value: s.id, label: s.name }));
+      const classOptions = assignedClasses.map(c => ({ value: c, label: c }));
+
+      document.getElementById("teacherMeta").textContent =
+        `Signed in as ${session.name} (${session.code}) • Classes: ${assignedClasses.join(", ") || "None"} • Subjects: ${subjectOptions.map(s => s.label).join(", ") || "None"}`;
+
+      document.getElementById("teacherNoClassWarning").classList.toggle(
+        "hidden", assignedClasses.length > 0 && subjectOptions.length > 0
+      );
+
+      fillSelect(document.getElementById("tClassFilter"), classOptions, document.getElementById("tClassFilter").value,
+        `All My Classes (${assignedClasses.join(", ") || "None"})`);
+      fillSelect(document.getElementById("tSubjectFilter"), subjectOptions, document.getElementById("tSubjectFilter").value,
+        `All My Subjects (${subjectOptions.map(s => s.label).join(", ") || "None"})`);
+      fillSelect(document.getElementById("tAnalyticsClassFilter"), classOptions, document.getElementById("tAnalyticsClassFilter").value,
+        "All My Assigned Classes");
+      fillSelect(document.getElementById("tAnalyticsSubjectFilter"), subjectOptions, document.getElementById("tAnalyticsSubjectFilter").value,
+        "All My Assigned Subjects");
+
+      const targetClassOptions = classOptions.slice();
+      if (assignedClasses.length > 1) targetClassOptions.push({ value: ALL_CLASSES, label: "All My Classes (Shared)" });
+      ["newQTargetClass", "bulkQTargetClass", "assignClassSelect"].forEach(selId => {
+        const sel = document.getElementById(selId);
+        fillSelect(sel, targetClassOptions, sel.value, null);
+      });
+
+      ["newQSubject", "bulkQTargetSubject", "assignSubjectSelect", "newNoticeSubject"].forEach(selId => {
+        const sel = document.getElementById(selId);
+        fillSelect(sel, subjectOptions, sel.value, null);
+      });
+
+      const bankClassOptions = classOptions.map(c => ({ value: c.value, label: `${c.label} Questions` }));
+      bankClassOptions.push({ value: ALL_CLASSES, label: "Shared (All Classes)" });
+      fillSelect(document.getElementById("tBankClassFilter"), bankClassOptions,
+        document.getElementById("tBankClassFilter").value, "All My Classes + Shared");
+      fillSelect(document.getElementById("tBankSubjectFilter"), subjectOptions,
+        document.getElementById("tBankSubjectFilter").value, "All My Subjects");
+
+      const noticeClasses = classOptions.slice();
+      if (assignedClasses.length > 1) noticeClasses.push({ value: ALL_CLASSES, label: "All My Assigned Classes" });
+      fillSelect(document.getElementById("newNoticeClass"), noticeClasses, document.getElementById("newNoticeClass").value, null);
 
       const myExamSubs = state.submissions.filter(s => {
         const sClass = s.studentClass || s.indexNumber || "";
-        return assigned.includes(sClass) && s.mode === "Exam";
+        const sSubject = s.subject || LEGACY_SUBJECT_ID;
+        return assignedClasses.includes(sClass) && assignedSubjects.includes(sSubject) && s.mode === "Exam";
       });
       const avg = myExamSubs.length ? Math.round(myExamSubs.reduce((a, b) => a + b.pct, 0) / myExamSubs.length) : 0;
       const high = myExamSubs.length ? Math.max(...myExamSubs.map(s => s.pct)) : 0;
@@ -2282,6 +2532,7 @@
       renderTeacherAnalytics();
       renderTeacherSubmissions();
       renderTeacherQuestions();
+      renderTeacherAssignments();
       renderTeacherNotices();
     }
 
@@ -2291,31 +2542,39 @@
         return showToast("Spreadsheet library still loading. Check internet connection.", "error");
       }
       const assigned = getTeacherAssignedClasses();
+      const subjects = getTeacherAssignedSubjects();
+      if (!assigned.length || !subjects.length) {
+        return showToast("Ask Admin to assign you classes and subjects before downloading a template.", "error");
+      }
       const defaultCls = assigned[0] || "Basic 8";
+      const defaultSubject = subjects[0];
+      const subjectLabel = getSubjectName(defaultSubject, defaultSubject);
       const sampleRows = [
         {
-          "Question": "Simplify: 3x + 5x - 2x",
-          "Option A": "6x",
-          "Option B": "8x",
-          "Option C": "10x",
-          "Option D": "5x",
-          "Correct Answer": "A",
-          "Worked Solution": "Combine like terms: (3 + 5 - 2)x = 6x.",
+          "Subject": subjectLabel,
+          "Question": `Sample question 1 for ${subjectLabel} — replace this text with your own question.`,
+          "Option A": "First option",
+          "Option B": "Correct option (sample)",
+          "Option C": "Third option",
+          "Option D": "Fourth option",
+          "Correct Answer": "B",
+          "Worked Solution": `Explain the steps that make the correct option right for ${subjectLabel}.`,
           "Target Class": defaultCls
         },
         {
-          "Question": "Find the perimeter of a square of side 9 cm.",
-          "Option A": "18 cm",
-          "Option B": "27 cm",
-          "Option C": "36 cm",
-          "Option D": "81 cm",
+          "Subject": subjectLabel,
+          "Question": `Sample question 2 for ${subjectLabel} — replace this text with your own question.`,
+          "Option A": "First option",
+          "Option B": "Second option",
+          "Option C": "Correct option (sample)",
+          "Option D": "Fourth option",
           "Correct Answer": "C",
-          "Worked Solution": "Perimeter of square = 4 × side = 4 × 9 = 36 cm.",
+          "Worked Solution": `Explain the steps that make the correct option right for ${subjectLabel}.`,
           "Target Class": defaultCls
         }
       ];
       const ws = XLSX.utils.json_to_sheet(sampleRows);
-      ws["!cols"] = [{ wch: 42 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 15 }, { wch: 44 }, { wch: 16 }];
+      ws["!cols"] = [{ wch: 20 }, { wch: 52 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 16 }, { wch: 48 }, { wch: 16 }];
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Questions");
       XLSX.writeFile(wb, "GBAT_Questions_Template.xlsx");
@@ -2338,6 +2597,17 @@
       quizFileInput.value = "";
     };
 
+    function resolveSubjectId(rawValue, fallbackId) {
+      const assigned = getTeacherAssignedSubjects();
+      const text = String(rawValue || "").trim().toLowerCase();
+      if (!text) return fallbackId;
+      const match = state.subjects.find(s =>
+        assigned.includes(s.id) &&
+        (s.id.toLowerCase() === text || s.name.toLowerCase() === text)
+      );
+      return match ? match.id : fallbackId;
+    }
+
     function parseCorrectAnswerIndex(rawVal, optionsArr) {
       const s = String(rawVal ?? "").trim();
       const upper = s.toUpperCase();
@@ -2351,7 +2621,7 @@
       return textIdx >= 0 ? textIdx : 0;
     }
 
-    function parseGiftQuestions(rawText, defaultTargetClass) {
+    function parseGiftQuestions(rawText, defaultTargetClass, defaultSubjectId) {
       const cleaned = rawText
         .split(/\r?\n/)
         .filter(line => !line.trim().startsWith("//"))
@@ -2389,6 +2659,7 @@
           while (options.length < 4) options.push("None of the above");
           parsed.push({
             id: "q_" + Date.now() + "_" + parsed.length,
+            subject: defaultSubjectId,
             targetClass: defaultTargetClass,
             q: qText,
             options: options.slice(0, 4),
@@ -2400,7 +2671,7 @@
       return parsed;
     }
 
-    function parseAikenQuestions(rawText, defaultTargetClass) {
+    function parseAikenQuestions(rawText, defaultTargetClass, defaultSubjectId) {
       const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
       const parsed = [];
       let currentQ = "";
@@ -2412,6 +2683,7 @@
         if (currentQ && opts.A && opts.B && ans !== null) {
           parsed.push({
             id: "q_" + Date.now() + "_" + parsed.length,
+            subject: defaultSubjectId,
             targetClass: defaultTargetClass,
             q: currentQ,
             options: [opts.A, opts.B, opts.C || "N/A", opts.D || "N/A"],
@@ -2447,10 +2719,12 @@
 
     function handleQuizImportFile(file) {
       const assigned = getTeacherAssignedClasses();
-      if (!assigned.length) {
-        return showToast("Ask Admin to assign your classes before importing questions.", "error");
+      const assignedSubjects = getTeacherAssignedSubjects();
+      if (!assigned.length || !assignedSubjects.length) {
+        return showToast("Ask Admin to assign your classes and subjects before importing questions.", "error");
       }
       const selectedTargetClass = document.getElementById("bulkQTargetClass").value || assigned[0];
+      const selectedSubjectId = document.getElementById("bulkQTargetSubject").value || assignedSubjects[0];
       const ext = file.name.split(".").pop().toLowerCase();
 
       if (["xlsx", "xls", "csv"].includes(ext)) {
@@ -2475,6 +2749,7 @@
               const ansKey = keys.find(k => /answer|correct|key/i.test(k)) || keys[5];
               const solKey = keys.find(k => /sol|explain|work|step|feedback/i.test(k)) || keys[6];
               const clsKey = keys.find(k => /class|form|grade/i.test(k));
+              const subjKey = keys.find(k => /subject|topic|course/i.test(k));
 
               const qText = String(row[qKey] || "").trim();
               const optA = String(row[aKey] || "").trim();
@@ -2487,9 +2762,11 @@
               const ansIdx = parseCorrectAnswerIndex(row[ansKey], options);
               const solText = String(row[solKey] || "").trim() || "Review the step-by-step solution for this question.";
               const rowClass = clsKey && String(row[clsKey]).trim() ? String(row[clsKey]).trim() : selectedTargetClass;
+              const rowSubject = resolveSubjectId(subjKey ? row[subjKey] : "", selectedSubjectId);
 
               imported.push({
                 id: "q_" + Date.now() + "_" + i,
+                subject: rowSubject,
                 targetClass: rowClass,
                 q: qText,
                 options,
@@ -2498,7 +2775,7 @@
               });
             });
 
-            finalizeImportedQuestions(imported, file.name, selectedTargetClass);
+            finalizeImportedQuestions(imported, file.name, selectedTargetClass, selectedSubjectId);
           } catch (err) {
             console.error(err);
             showToast("Could not parse Excel/CSV file. Check column headers.", "error");
@@ -2522,6 +2799,7 @@
                 while (opts.length < 4) opts.push("N/A");
                 imported.push({
                   id: "q_" + Date.now() + "_" + i,
+                  subject: resolveSubjectId(item.subject || item.subjectId || item.subjectName || "", selectedSubjectId),
                   targetClass: item.targetClass || selectedTargetClass,
                   q: String(item.q || item.question).trim(),
                   options: opts.slice(0, 4).map(String),
@@ -2531,14 +2809,14 @@
               });
             } else {
               if (content.includes("{") && content.includes("}")) {
-                imported = parseGiftQuestions(content, selectedTargetClass);
+                imported = parseGiftQuestions(content, selectedTargetClass, selectedSubjectId);
               }
               if (!imported.length) {
-                imported = parseAikenQuestions(content, selectedTargetClass);
+                imported = parseAikenQuestions(content, selectedTargetClass, selectedSubjectId);
               }
             }
 
-            finalizeImportedQuestions(imported, file.name, selectedTargetClass);
+            finalizeImportedQuestions(imported, file.name, selectedTargetClass, selectedSubjectId);
           } catch (err) {
             console.error(err);
             showToast("Could not parse quiz file. Check GIFT, Aiken, or JSON syntax.", "error");
@@ -2548,15 +2826,17 @@
       }
     }
 
-    function finalizeImportedQuestions(imported, fileName, targetClassLabel) {
+    function finalizeImportedQuestions(imported, fileName, targetClassLabel, targetSubjectId) {
       if (!imported.length) {
         return showToast("No valid multiple-choice questions were found in that file.", "error");
       }
       state.questions.push(...imported);
       saveBranch("questions", state.questions);
-      addLog(session.name, `Bulk imported ${imported.length} questions from ${fileName} into ${targetClassLabel}`);
+      const subjectLabels = Array.from(new Set(imported.map(q => q.subject || targetSubjectId)))
+        .map(id => getSubjectName(id, id)).join(", ");
+      addLog(session.name, `Bulk imported ${imported.length} questions from ${fileName} into ${subjectLabels} / ${targetClassLabel}`);
 
-      const msg = `Imported ${imported.length} question(s) from "${fileName}" into ${targetClassLabel}!`;
+      const msg = `Imported ${imported.length} question(s) from "${fileName}" into ${subjectLabels} (${targetClassLabel})!`;
       const banner = document.getElementById("quizImportSummary");
       banner.textContent = msg;
       banner.classList.remove("hidden");
@@ -2566,17 +2846,22 @@
     }
 
     function renderTeacherAnalytics() {
-      const assigned = getTeacherAssignedClasses();
+      const assignedClasses = getTeacherAssignedClasses();
+      const assignedSubjects = getTeacherAssignedSubjects();
       const selectedCls = document.getElementById("tAnalyticsClassFilter").value;
-      const targetClasses = selectedCls ? [selectedCls] : assigned;
+      const selectedSubj = document.getElementById("tAnalyticsSubjectFilter").value;
+      const targetClasses = selectedCls ? [selectedCls] : assignedClasses;
+      const targetSubjects = selectedSubj ? [selectedSubj] : assignedSubjects;
 
       const scopedExamSubs = state.submissions.filter(s => {
         const sClass = s.studentClass || s.indexNumber || "";
-        return targetClasses.includes(sClass) && s.mode === "Exam";
+        const sSubject = s.subject || LEGACY_SUBJECT_ID;
+        return targetClasses.includes(sClass) && targetSubjects.includes(sSubject) && s.mode === "Exam";
       });
 
       const relevantQuestions = state.questions.filter(q =>
-        !q.targetClass || q.targetClass === "ALL" || targetClasses.includes(q.targetClass)
+        targetSubjects.includes(q.subject || LEGACY_SUBJECT_ID) &&
+        (!q.targetClass || q.targetClass === ALL_CLASSES || targetClasses.includes(q.targetClass))
       );
 
       let hardest = "-", lowestAcc = 101;
@@ -2599,10 +2884,15 @@
 
         const tr = document.createElement("tr");
         const tdNum = document.createElement("td"); tdNum.textContent = idx + 1;
+        const tdSubj = document.createElement("td");
+        const sBadge = document.createElement("span");
+        sBadge.className = "badge b-green";
+        sBadge.textContent = getSubjectName(q.subject, q.subject || "-");
+        tdSubj.appendChild(sBadge);
         const tdCls = document.createElement("td");
         const cBadge = document.createElement("span");
         cBadge.className = "badge b-blue";
-        cBadge.textContent = q.targetClass === "ALL" ? "All Classes" : q.targetClass;
+        cBadge.textContent = q.targetClass === ALL_CLASSES ? "All Classes" : (q.targetClass || "All Classes");
         tdCls.appendChild(cBadge);
         const tdQ = document.createElement("td"); tdQ.textContent = q.q.slice(0, 62) + (q.q.length > 62 ? "..." : "");
         const tdAtt = document.createElement("td"); tdAtt.textContent = attempts;
@@ -2612,33 +2902,40 @@
         badge.className = `badge ${acc >= 70 ? "b-green" : acc >= 45 ? "b-warn" : "b-red"}`;
         badge.textContent = `${acc}%`;
         tdAcc.appendChild(badge);
-        tr.append(tdNum, tdCls, tdQ, tdAtt, tdCor, tdAcc);
+        tr.append(tdNum, tdSubj, tdCls, tdQ, tdAtt, tdCor, tdAcc);
         analyticsBody.appendChild(tr);
       });
 
       document.getElementById("tKpiHard").textContent = hardest;
     }
     document.getElementById("tAnalyticsClassFilter").onchange = renderTeacherAnalytics;
+    document.getElementById("tAnalyticsSubjectFilter").onchange = renderTeacherAnalytics;
 
     function renderTeacherSubmissions() {
-      const assigned = getTeacherAssignedClasses();
+      const assignedClasses = getTeacherAssignedClasses();
+      const assignedSubjects = getTeacherAssignedSubjects();
       const q = document.getElementById("tSearchInput").value.trim().toLowerCase();
       const clsFilter = document.getElementById("tClassFilter").value;
+      const subjFilter = document.getElementById("tSubjectFilter").value;
       const modeFilter = document.getElementById("tModeFilter").value;
       const tbody = document.getElementById("tSubsBody");
       tbody.innerHTML = "";
 
       state.submissions.slice().reverse().filter(s => {
         const sClass = s.studentClass || s.indexNumber || "";
-        if (!assigned.includes(sClass)) return false;
+        const sSubject = s.subject || LEGACY_SUBJECT_ID;
+        if (!assignedClasses.includes(sClass) || !assignedSubjects.includes(sSubject)) return false;
         const matchesClass = !clsFilter || sClass === clsFilter;
+        const matchesSubject = !subjFilter || sSubject === subjFilter;
         const matchesMode = !modeFilter || s.mode === modeFilter;
-        const matchesText = s.studentName.toLowerCase().includes(q) || sClass.toLowerCase().includes(q);
-        return matchesClass && matchesMode && matchesText;
+        const matchesText = s.studentName.toLowerCase().includes(q) || sClass.toLowerCase().includes(q) ||
+          getSubjectName(sSubject, sSubject).toLowerCase().includes(q);
+        return matchesClass && matchesSubject && matchesMode && matchesText;
       }).forEach(sub => {
         const tr = document.createElement("tr");
         const sClass = sub.studentClass || sub.indexNumber || "-";
-        [sub.studentName, sClass, sub.mode, `${sub.score}/${sub.total}`, `${sub.pct}%`].forEach(v => {
+        const sSubject = getSubjectName(sub.subject, sub.subject || "-");
+        [sub.studentName, sSubject, sClass, sub.mode, `${sub.score}/${sub.total}`, `${sub.pct}%`].forEach(v => {
           const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
         });
 
@@ -2664,18 +2961,24 @@
     }
     document.getElementById("tSearchInput").oninput = renderTeacherSubmissions;
     document.getElementById("tClassFilter").onchange = renderTeacherSubmissions;
+    document.getElementById("tSubjectFilter").onchange = renderTeacherSubmissions;
     document.getElementById("tModeFilter").onchange = renderTeacherSubmissions;
 
     function renderTeacherQuestions() {
-      const assigned = getTeacherAssignedClasses();
+      const assignedClasses = getTeacherAssignedClasses();
+      const assignedSubjects = getTeacherAssignedSubjects();
       const filterCls = document.getElementById("tBankClassFilter").value;
+      const filterSubj = document.getElementById("tBankSubjectFilter").value;
 
       const visibleEntries = state.questions
         .map((q, globalIdx) => ({ q, globalIdx }))
         .filter(({ q }) => {
-          const tc = q.targetClass || "ALL";
+          const qSubj = q.subject || LEGACY_SUBJECT_ID;
+          const tc = q.targetClass || ALL_CLASSES;
+          if (!assignedSubjects.includes(qSubj)) return false;
+          if (filterSubj && qSubj !== filterSubj) return false;
           if (filterCls) return tc === filterCls;
-          return tc === "ALL" || assigned.includes(tc);
+          return tc === ALL_CLASSES || assignedClasses.includes(tc);
         });
 
       document.getElementById("qBankCount").textContent = visibleEntries.length;
@@ -2686,10 +2989,16 @@
         const tr = document.createElement("tr");
         const td1 = document.createElement("td"); td1.textContent = displayIdx + 1;
 
+        const tdSubj = document.createElement("td");
+        const subjBadge = document.createElement("span");
+        subjBadge.className = "badge b-green";
+        subjBadge.textContent = getSubjectName(q.subject, q.subject || "-");
+        tdSubj.appendChild(subjBadge);
+
         const tdCls = document.createElement("td");
         const badge = document.createElement("span");
         badge.className = "badge b-blue";
-        badge.textContent = q.targetClass === "ALL" ? "All Classes" : q.targetClass;
+        badge.textContent = q.targetClass === ALL_CLASSES ? "All Classes" : (q.targetClass || "All Classes");
         tdCls.appendChild(badge);
 
         const td2 = document.createElement("td"); td2.textContent = q.q;
@@ -2726,26 +3035,32 @@
           if (state.questions.length <= 1) return alert("At least 1 question must remain.");
           state.questions = state.questions.filter(item => item.id !== q.id);
           saveBranch("questions", state.questions);
-          addLog(session.name, `Removed question from ${q.targetClass || "ALL"} bank`);
+          addLog(session.name, `Removed question from ${getSubjectName(q.subject, q.subject || "-")} / ${q.targetClass || ALL_CLASSES} bank`);
           renderTeacherDashboard();
           showToast("Question removed", "info");
         };
         td4.append(upBtn, downBtn, del);
-        tr.append(td1, tdCls, td2, td3, td4);
+        tr.append(td1, tdSubj, tdCls, td2, td3, td4);
         tbody.appendChild(tr);
       });
     }
     document.getElementById("tBankClassFilter").onchange = renderTeacherQuestions;
+    document.getElementById("tBankSubjectFilter").onchange = renderTeacherQuestions;
 
     document.getElementById("shuffleBankBtn").onclick = () => {
-      const assigned = getTeacherAssignedClasses();
+      const assignedClasses = getTeacherAssignedClasses();
+      const assignedSubjects = getTeacherAssignedSubjects();
       const filterCls = document.getElementById("tBankClassFilter").value;
+      const filterSubj = document.getElementById("tBankSubjectFilter").value;
       const matchingIndices = [];
       const matchingItems = [];
 
       state.questions.forEach((q, idx) => {
-        const tc = q.targetClass || "ALL";
-        const matches = filterCls ? tc === filterCls : (tc === "ALL" || assigned.includes(tc));
+        const qSubj = q.subject || LEGACY_SUBJECT_ID;
+        const tc = q.targetClass || ALL_CLASSES;
+        if (!assignedSubjects.includes(qSubj)) return;
+        if (filterSubj && qSubj !== filterSubj) return;
+        const matches = filterCls ? tc === filterCls : (tc === ALL_CLASSES || assignedClasses.includes(tc));
         if (matches) {
           matchingIndices.push(idx);
           matchingItems.push(q);
@@ -2758,15 +3073,19 @@
       });
 
       saveBranch("questions", state.questions);
-      addLog(session.name, `Shuffled question bank (${filterCls || "assigned classes"})`);
+      addLog(session.name, `Shuffled question bank (${filterSubj ? getSubjectName(filterSubj, filterSubj) : "assigned subjects"} / ${filterCls || "assigned classes"})`);
       renderTeacherQuestions();
       showToast("Filtered question bank shuffled and saved!", "success");
     };
 
     document.getElementById("addQuestionBtn").onclick = () => {
       const assigned = getTeacherAssignedClasses();
-      if (!assigned.length) return alert("You must be assigned at least one class by Admin before adding questions.");
+      const assignedSubjects = getTeacherAssignedSubjects();
+      if (!assigned.length || !assignedSubjects.length) {
+        return alert("You must be assigned at least one class and one subject by Admin before adding questions.");
+      }
 
+      const subject = document.getElementById("newQSubject").value || assignedSubjects[0];
       const targetClass = document.getElementById("newQTargetClass").value || assigned[0];
       const q = document.getElementById("newQText").value.trim();
       const options = ["newOptA", "newOptB", "newOptC", "newOptD"].map(id => document.getElementById(id).value.trim());
@@ -2776,20 +3095,88 @@
         alert("Please fill in the question, all 4 options, and the worked solution.");
         return;
       }
-      state.questions.push({ id: "q_" + Date.now(), targetClass, q, options, ans, sol });
+      state.questions.push({ id: "q_" + Date.now(), subject, targetClass, q, options, ans, sol });
       saveBranch("questions", state.questions);
-      addLog(session.name, `Added question for ${targetClass}`);
+      addLog(session.name, `Added question for ${getSubjectName(subject, subject)} / ${targetClass}`);
       ["newQText", "newOptA", "newOptB", "newOptC", "newOptD", "newQSol"].forEach(id => document.getElementById(id).value = "");
       renderTeacherDashboard();
-      showToast(`Question added to ${targetClass} bank!`, "success");
+      showToast(`Question added to ${getSubjectName(subject, subject)} / ${targetClass} bank!`, "success");
+    };
+
+    function renderTeacherAssignments() {
+      const box = document.getElementById("assignmentList");
+      box.innerHTML = "";
+      const mine = state.assignments.filter(a => a.teacherId === session.id);
+      if (!mine.length) {
+        box.textContent = "No subject quizzes pinned yet. Students can still self-select any available subject for their class.";
+        return;
+      }
+      mine.forEach(a => {
+        const wrap = document.createElement("div");
+        wrap.className = "notice";
+        wrap.style.display = "flex";
+        wrap.style.justifyContent = "space-between";
+        wrap.style.alignItems = "center";
+        wrap.style.gap = "10px";
+        const left = document.createElement("div");
+        const t = document.createElement("div");
+        t.textContent = `${getSubjectName(a.subjectId, a.subjectId)} → ${a.targetClass === ALL_CLASSES ? "All My Classes" : a.targetClass}`;
+        const m = document.createElement("div");
+        m.className = "notice-meta";
+        m.textContent = `Pinned by ${a.teacherName || session.name} • ${a.date || ""} • ${a.active !== false ? "Active" : "Inactive"}`;
+        left.append(t, m);
+        const del = document.createElement("button");
+        del.className = "btn btn-outline btn-sm";
+        del.textContent = "Remove Pin";
+        del.onclick = () => {
+          state.assignments = state.assignments.filter(item => item.id !== a.id);
+          saveBranch("assignments", state.assignments);
+          addLog(session.name, `Removed pinned ${getSubjectName(a.subjectId, a.subjectId)} quiz for ${a.targetClass}`);
+          renderTeacherAssignments();
+          showToast("Pinned quiz removed", "info");
+        };
+        wrap.append(left, del);
+        box.appendChild(wrap);
+      });
+    }
+
+    document.getElementById("pinQuizBtn").onclick = () => {
+      const assignedClasses = getTeacherAssignedClasses();
+      const assignedSubjects = getTeacherAssignedSubjects();
+      if (!assignedClasses.length || !assignedSubjects.length) {
+        return alert("Ask Admin to assign you classes and subjects first.");
+      }
+      const subjectId = document.getElementById("assignSubjectSelect").value || assignedSubjects[0];
+      const targetClass = document.getElementById("assignClassSelect").value || assignedClasses[0];
+      if (!canTeacherManage(subjectId, targetClass)) {
+        return alert("You are not assigned to that subject and class combination.");
+      }
+      if (state.assignments.some(a => a.teacherId === session.id && a.subjectId === subjectId && a.targetClass === targetClass)) {
+        return showToast("That subject quiz is already pinned for this class.", "error");
+      }
+      state.assignments.unshift({
+        id: "asg_" + Date.now(),
+        subjectId,
+        targetClass,
+        teacherId: session.id,
+        teacherName: session.name,
+        active: true,
+        date: new Date().toLocaleDateString()
+      });
+      saveBranch("assignments", state.assignments);
+      addLog(session.name, `Pinned ${getSubjectName(subjectId, subjectId)} quiz for ${targetClass}`);
+      renderTeacherAssignments();
+      showToast(`${getSubjectName(subjectId, subjectId)} quiz pinned for ${targetClass}!`, "success");
     };
 
     function renderTeacherNotices() {
       const assigned = getTeacherAssignedClasses();
+      const assignedSubjects = getTeacherAssignedSubjects();
       const box = document.getElementById("tNoticesList");
       box.innerHTML = "";
       state.announcements.forEach((a, idx) => {
-        if (a.targetClass !== "ALL" && !assigned.includes(a.targetClass)) return;
+        if (a.targetClass !== ALL_CLASSES && !assigned.includes(a.targetClass)) return;
+        if (a.subject !== ALL_SUBJECTS && !assignedSubjects.includes(a.subject)) return;
         const wrap = document.createElement("div");
         wrap.className = "notice";
         wrap.style.display = "flex";
@@ -2799,7 +3186,9 @@
         const left = document.createElement("div");
         const t = document.createElement("div"); t.textContent = a.text;
         const m = document.createElement("div"); m.className = "notice-meta";
-        m.textContent = `${a.author} • Target: ${a.targetClass === "ALL" ? "All Classes" : a.targetClass} • ${a.date}`;
+        const aSubj = a.subject === ALL_SUBJECTS ? "All Subjects" : getSubjectName(a.subject, a.subject || "-");
+        const aCls = a.targetClass === ALL_CLASSES ? "All Classes" : a.targetClass;
+        m.textContent = `${a.author} • Target: ${aSubj} / ${aCls} • ${a.date}`;
         left.append(t, m);
         const del = document.createElement("button");
         del.className = "btn btn-outline btn-sm";
@@ -2816,13 +3205,15 @@
 
     document.getElementById("postNoticeBtn").onclick = () => {
       const assigned = getTeacherAssignedClasses();
-      if (!assigned.length) return alert("No classes assigned to your account.");
+      const assignedSubjects = getTeacherAssignedSubjects();
+      if (!assigned.length || !assignedSubjects.length) return alert("No classes or subjects assigned to your account.");
       const txt = document.getElementById("newNoticeInput").value.trim();
       const targetClass = document.getElementById("newNoticeClass").value || assigned[0];
+      const subject = document.getElementById("newNoticeSubject").value || assignedSubjects[0];
       if (!txt) return;
-      state.announcements.unshift({ id: "n" + Date.now(), targetClass, text: txt, author: session.name, date: new Date().toLocaleDateString() });
+      state.announcements.unshift({ id: "n" + Date.now(), subject, targetClass, text: txt, author: session.name, date: new Date().toLocaleDateString() });
       saveBranch("announcements", state.announcements);
-      addLog(session.name, `Posted announcement for ${targetClass}`);
+      addLog(session.name, `Posted announcement for ${getSubjectName(subject, subject)} / ${targetClass}`);
       document.getElementById("newNoticeInput").value = "";
       renderTeacherNotices();
       showToast("Announcement posted!", "success");
@@ -2858,11 +3249,13 @@
 
     document.getElementById("exportCsvBtn").onclick = () => {
       const assigned = getTeacherAssignedClasses();
-      const rows = [["Student Name", "Class", "Mode", "Score", "Total", "Percentage", "Tab Switches", "Date"]];
+      const assignedSubjects = getTeacherAssignedSubjects();
+      const rows = [["Student Name", "Subject", "Class", "Mode", "Score", "Total", "Percentage", "Tab Switches", "Date"]];
       state.submissions.forEach(s => {
         const sClass = s.studentClass || s.indexNumber || "";
-        if (!assigned.includes(sClass)) return;
-        rows.push([`"${s.studentName}"`, `"${sClass}"`, s.mode, s.score, s.total, `${s.pct}%`, s.tabSwitches || 0, `"${s.date}"`]);
+        const sSubject = s.subject || LEGACY_SUBJECT_ID;
+        if (!assigned.includes(sClass) || !assignedSubjects.includes(sSubject)) return;
+        rows.push([`"${s.studentName}"`, `"${getSubjectName(sSubject, sSubject)}"`, `"${sClass}"`, s.mode, s.score, s.total, `${s.pct}%`, s.tabSwitches || 0, `"${s.date}"`]);
       });
       const blob = new Blob([rows.map(r => r.join(",")).join("\n")], { type: "text/csv" });
       const a = document.createElement("a");
@@ -2876,7 +3269,7 @@
       btn.onclick = () => {
         document.querySelectorAll("#adminTabs .sub-tab").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
-        ["aClasses", "aUsers", "aSettings", "aLogs"].forEach(id =>
+        ["aClasses", "aSubjects", "aUsers", "aSettings", "aLogs"].forEach(id =>
           document.getElementById(id).classList.toggle("hidden", id !== btn.dataset.tab)
         );
       };
@@ -2887,6 +3280,7 @@
       document.getElementById("aNewClassWrap").classList.toggle("hidden", !isStudent);
       document.getElementById("aNewStaffWrap").classList.toggle("hidden", isStudent);
       document.getElementById("aNewTeacherClassesWrap").classList.toggle("hidden", isStudent);
+      document.getElementById("aNewTeacherSubjectsWrap").classList.toggle("hidden", isStudent);
     };
 
     document.getElementById("downloadExcelTemplateBtn").onclick = () => {
@@ -2993,7 +3387,7 @@
 
     function openEditTeacherClassesModal(teacher) {
       editingTeacherId = teacher.id;
-      document.getElementById("editTeacherModalTitle").textContent = `Assign Classes: ${teacher.name}`;
+      document.getElementById("editTeacherModalTitle").textContent = `Assign Classes & Subjects: ${teacher.name}`;
       const boxWrap = document.getElementById("editTeacherClassBoxes");
       boxWrap.innerHTML = "";
       const currentAssigned = Array.isArray(teacher.assignedClasses) ? teacher.assignedClasses : [];
@@ -3006,6 +3400,20 @@
         cb.checked = currentAssigned.includes(cls);
         lbl.append(cb, document.createTextNode(cls));
         boxWrap.appendChild(lbl);
+      });
+
+      const subjBox = document.getElementById("editTeacherSubjectBoxes");
+      subjBox.innerHTML = "";
+      const currentSubjects = Array.isArray(teacher.assignedSubjects) ? teacher.assignedSubjects : [];
+      activeSubjects().forEach(s => {
+        const lbl = document.createElement("label");
+        lbl.className = "checkbox-pill";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.value = s.id;
+        cb.checked = currentSubjects.includes(s.id);
+        lbl.append(cb, document.createTextNode(s.name));
+        subjBox.appendChild(lbl);
       });
       document.getElementById("editTeacherModal").classList.remove("hidden");
     }
@@ -3020,12 +3428,14 @@
       const teacher = state.users.find(u => u.id === editingTeacherId);
       if (teacher) {
         const selected = Array.from(document.querySelectorAll("#editTeacherClassBoxes input:checked")).map(i => i.value);
+        const selectedSubjects = Array.from(document.querySelectorAll("#editTeacherSubjectBoxes input:checked")).map(i => i.value);
         teacher.assignedClasses = selected;
+        teacher.assignedSubjects = selectedSubjects;
         saveBranch("users", state.users);
-        addLog("Principal Admin", `Updated classes for ${teacher.name}: ${selected.join(", ") || "None"}`);
+        addLog("Principal Admin", `Updated assignments for ${teacher.name}: Classes ${selected.join(", ") || "None"} • Subjects ${selectedSubjects.map(id => getSubjectName(id, id)).join(", ") || "None"}`);
         populateDropdowns();
         renderAdminDashboard();
-        showToast(`Classes updated for ${teacher.name}`, "success");
+        showToast(`Assignments updated for ${teacher.name}`, "success");
       }
       editingTeacherId = null;
       document.getElementById("editTeacherModal").classList.add("hidden");
@@ -3100,6 +3510,66 @@
       document.getElementById("renameUserModal").classList.add("hidden");
     };
 
+    function renderSubjectList() {
+      const box = document.getElementById("aSubjectList");
+      box.innerHTML = "";
+      if (!state.subjects.length) {
+        box.textContent = "No subjects registered yet. Add one above.";
+        return;
+      }
+      state.subjects.forEach((s, idx) => {
+        const tag = document.createElement("span");
+        tag.className = "class-tag";
+        tag.textContent = `${s.name} (${s.id})${s.active === false ? " • inactive" : ""}`;
+        const delBtn = document.createElement("button");
+        delBtn.title = "Remove Subject";
+        delBtn.textContent = "×";
+        delBtn.onclick = () => {
+          if (state.subjects.length <= 1) return alert("Keep at least 1 subject registered.");
+          const qCount = state.questions.filter(q => q.subject === s.id).length;
+          const aCount = state.assignments.filter(a => a.subjectId === s.id).length;
+          if (!confirm(`Remove subject "${s.name}"? This deletes ${qCount} question(s) and ${aCount} pinned quiz(zes). Past attempts are kept for reporting.`)) return;
+          state.subjects.splice(idx, 1);
+          state.questions = state.questions.filter(q => q.subject !== s.id);
+          state.assignments = state.assignments.filter(a => a.subjectId !== s.id);
+          state.announcements = state.announcements.filter(a => a.subject !== s.id);
+          state.users.forEach(u => {
+            if (u.role === "teacher" && Array.isArray(u.assignedSubjects)) {
+              u.assignedSubjects = u.assignedSubjects.filter(id => id !== s.id);
+            }
+          });
+          saveBranch("subjects", state.subjects);
+          saveBranch("questions", state.questions);
+          saveBranch("assignments", state.assignments);
+          saveBranch("announcements", state.announcements);
+          saveBranch("users", state.users);
+          addLog("Principal Admin", `Removed subject: ${s.name} (${s.id})`);
+          populateDropdowns();
+          renderAdminDashboard();
+          showToast(`Subject "${s.name}" removed`, "info");
+        };
+        tag.appendChild(delBtn);
+        box.appendChild(tag);
+      });
+    }
+
+    document.getElementById("aAddSubjectBtn").onclick = () => {
+      const id = normalizeName(document.getElementById("aNewSubjectId").value).toLowerCase().replace(/\s+/g, "_");
+      const name = normalizeName(document.getElementById("aNewSubjectName").value);
+      if (!id || !name) return alert("Enter both a subject ID and a display name.");
+      if (!/^[a-z0-9_-]+$/.test(id)) return alert("Subject ID may only use letters, numbers, hyphens and underscores (e.g. eng, social_studies).");
+      if (state.subjects.some(s => s.id.toLowerCase() === id)) return alert("That subject ID already exists.");
+      if (state.subjects.some(s => s.name.toLowerCase() === name.toLowerCase())) return alert("That subject name already exists.");
+      state.subjects.push({ id, name, active: true });
+      saveBranch("subjects", state.subjects);
+      addLog("Principal Admin", `Registered subject: ${name} (${id})`);
+      document.getElementById("aNewSubjectId").value = "";
+      document.getElementById("aNewSubjectName").value = "";
+      populateDropdowns();
+      renderAdminDashboard();
+      showToast(`Subject "${name}" registered!`, "success");
+    };
+
     function renderAdminDashboard() {
       const students = state.users.filter(u => u.role === "student");
       const examSubs = state.submissions.filter(s => s.mode === "Exam");
@@ -3113,6 +3583,8 @@
       document.getElementById("aKpiAvg").textContent = `${avg}%`;
       document.getElementById("aKpiRoster").textContent = state.settings.rosterLock ? "ON" : "OFF";
       document.getElementById("aUserCount").textContent = state.users.length;
+
+      renderSubjectList();
 
       const classBox = document.getElementById("aClassList");
       classBox.innerHTML = "";
@@ -3136,8 +3608,10 @@
                 u.assignedClasses = u.assignedClasses.filter(c => c !== cls);
               }
             });
+            state.assignments = state.assignments.filter(a => a.targetClass !== cls);
             saveBranch("classes", state.classes);
             saveBranch("users", state.users);
+            saveBranch("assignments", state.assignments);
             addLog("Principal Admin", `Removed class: ${cls}`);
             populateDropdowns();
             renderAdminDashboard();
@@ -3156,7 +3630,10 @@
         const tdC = document.createElement("td");
         if (u.role === "teacher") {
           const clsList = (u.assignedClasses && u.assignedClasses.length) ? u.assignedClasses.join(", ") : "None Assigned";
-          tdC.textContent = `${u.code} • Classes: ${clsList}`;
+          const subjList = (u.assignedSubjects && u.assignedSubjects.length)
+            ? u.assignedSubjects.map(id => getSubjectName(id, id)).join(", ")
+            : "None Assigned";
+          tdC.textContent = `${u.code} • Classes: ${clsList} • Subjects: ${subjList}`;
         } else {
           tdC.textContent = u.code;
         }
@@ -3297,8 +3774,9 @@
       } else {
         const staffCode = normalizeName(document.getElementById("aNewStaffCode").value) || "TCH-NEW";
         const assignedClasses = Array.from(document.querySelectorAll("#aNewTeacherClassCheckboxes input:checked")).map(i => i.value);
-        state.users.push({ id: "t" + Date.now(), name, role: "teacher", code: staffCode, assignedClasses, passwordHash: "", active: true });
-        logDetail = `teacher: ${name} (${staffCode}) → Classes: ${assignedClasses.join(", ") || "None"}`;
+        const assignedSubjects = Array.from(document.querySelectorAll("#aNewTeacherSubjectCheckboxes input:checked")).map(i => i.value);
+        state.users.push({ id: "t" + Date.now(), name, role: "teacher", code: staffCode, assignedClasses, assignedSubjects, passwordHash: "", active: true });
+        logDetail = `teacher: ${name} (${staffCode}) → Classes: ${assignedClasses.join(", ") || "None"} • Subjects: ${assignedSubjects.map(id => getSubjectName(id, id)).join(", ") || "None"}`;
       }
 
       // Save first: addLog() triggers an onValue echo that rehydrates state, so logging
