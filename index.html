@@ -470,7 +470,7 @@
     .review-item.passed { border-left-color: var(--success); }
     .review-item.missed { border-left-color: var(--danger); }
 
-    /* Modal for assigning teacher classes */
+    /* Modal for assigning teacher classes & renaming users */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -813,7 +813,6 @@
 
       <!-- T3: Class-Isolated Question Bank + Multi-Format Quiz Importer -->
       <div class="card hidden" id="tQuestions">
-        <!-- Bulk Upload Section (GIFT, Excel, CSV, Aiken TXT, JSON) -->
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
           <div>
             <h3 style="margin:0;">Bulk Import Questions (GIFT, Excel, CSV, Aiken TXT, JSON)</h3>
@@ -1122,6 +1121,25 @@
     </div>
   </div>
 
+  <!-- Modal for Renaming Any User (and Updating Student Class) -->
+  <div class="modal-backdrop hidden" id="renameUserModal">
+    <div class="modal-card">
+      <h3 style="margin-top:0;" id="renameUserModalTitle">Rename User</h3>
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="renameUserNameInput" placeholder="Enter updated full name" />
+      </div>
+      <div class="field hidden" id="renameUserClassWrap">
+        <label>Student Class</label>
+        <select id="renameUserClassSelect"></select>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+        <button class="btn btn-secondary btn-sm" id="closeRenameUserModalBtn">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="saveRenameUserBtn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-container" id="toastContainer"></div>
 
   <script type="module">
@@ -1276,6 +1294,7 @@
     let reviewSubmission = null;
     let showMissedOnly = false;
     let editingTeacherId = null;
+    let renamingUserId = null;
 
     /* ---------------- GRANULAR FIREBASE PERSISTENCE ---------------- */
     function markSynced() {
@@ -1283,26 +1302,51 @@
       syncBadge.classList.add("synced");
     }
 
+    // Firebase RTDB rejects payloads containing `undefined` by throwing synchronously.
+    // That bypasses promise .catch() and leaves the badge stuck on "Saving..." forever.
+    function makeFirebaseSafe(value) {
+      if (Array.isArray(value)) return value.map(makeFirebaseSafe);
+      if (value && typeof value === "object") {
+        const clean = {};
+        Object.keys(value).forEach(key => {
+          if (value[key] !== undefined) clean[key] = makeFirebaseSafe(value[key]);
+        });
+        return clean;
+      }
+      return value;
+    }
+
+    function reportSaveError(branchName, err) {
+      console.error(`Failed saving ${branchName}:`, err);
+      syncBadge.classList.remove("synced");
+      syncBadge.textContent = "⚠ Sync Error";
+      showToast(`Could not save ${branchName}: ${err && err.message ? err.message : "unknown error"}`, "error");
+    }
+
     function saveBranch(branchName, payload) {
       syncBadge.classList.remove("synced");
       syncBadge.textContent = "Saving...";
-      return set(ref(db, `${ROOT_PATH}/${branchName}`), payload)
-        .then(markSynced)
-        .catch(err => {
-          console.error(`Failed saving ${branchName}:`, err);
-          syncBadge.textContent = "⚠ Sync Error";
-        });
+      try {
+        return set(ref(db, `${ROOT_PATH}/${branchName}`), makeFirebaseSafe(payload))
+          .then(markSynced)
+          .catch(err => reportSaveError(branchName, err));
+      } catch (err) {
+        reportSaveError(branchName, err);
+        return Promise.resolve();
+      }
     }
 
     function pushSubmission(subObj) {
       syncBadge.classList.remove("synced");
       syncBadge.textContent = "Saving...";
-      return push(ref(db, `${ROOT_PATH}/submissions`), subObj)
-        .then(markSynced)
-        .catch(err => {
-          console.error("Failed pushing submission:", err);
-          syncBadge.textContent = "⚠ Sync Error";
-        });
+      try {
+        return push(ref(db, `${ROOT_PATH}/submissions`), makeFirebaseSafe(subObj))
+          .then(markSynced)
+          .catch(err => reportSaveError("submissions", err));
+      } catch (err) {
+        reportSaveError("submissions", err);
+        return Promise.resolve();
+      }
     }
 
     function addLog(actor, action) {
@@ -1312,19 +1356,32 @@
     }
 
     function hydrateStateFromSnapshot(data) {
-      const loadedQuestions = (Array.isArray(data.questions) ? data.questions : Object.values(data.questions || defaultQuestions)).map((q, idx) => ({
-        ...q,
-        id: q.id || `q_legacy_${idx}`,
-        targetClass: q.targetClass || "ALL"
-      }));
+      const loadedQuestions = (Array.isArray(data.questions) ? data.questions : Object.values(data.questions || defaultQuestions))
+        .filter(Boolean)
+        .map((q, idx) => ({
+          ...q,
+          id: q.id || `q_legacy_${idx}`,
+          targetClass: q.targetClass || "ALL"
+        }));
 
       const rawUsers = Array.isArray(data.users) ? data.users : Object.values(data.users || {});
-      const loadedUsers = rawUsers.map(u => ({
-        ...u,
-        assignedClasses: u.role === "teacher"
-          ? (Array.isArray(u.assignedClasses) ? u.assignedClasses : [])
-          : undefined
-      }));
+      const loadedUsers = rawUsers
+        .filter(u => u && typeof u === "object" && u.name)
+        .map((u, idx) => {
+          const normalized = {
+            ...u,
+            id: u.id || `u_legacy_${idx}_${normalizeName(u.name).toLowerCase().replace(/\s+/g, "_")}`,
+            active: u.active !== false
+          };
+          if (normalized.role === "teacher") {
+            normalized.assignedClasses = Array.isArray(u.assignedClasses) ? u.assignedClasses : [];
+          } else {
+            // Students must not carry an undefined assignedClasses key: Firebase rejects
+            // the whole users write when it sees one, which froze rename/delete/suspend.
+            delete normalized.assignedClasses;
+          }
+          return normalized;
+        });
 
       let loadedSubs = [];
       if (Array.isArray(data.submissions)) {
@@ -1333,10 +1390,12 @@
         loadedSubs = Object.entries(data.submissions).map(([fbKey, val]) => ({ fbKey, ...val }));
       }
 
-      const loadedNotices = (Array.isArray(data.announcements) ? data.announcements : Object.values(data.announcements || {})).map(n => ({
-        ...n,
-        targetClass: n.targetClass || "ALL"
-      }));
+      const loadedNotices = (Array.isArray(data.announcements) ? data.announcements : Object.values(data.announcements || {}))
+        .filter(Boolean)
+        .map(n => ({
+          ...n,
+          targetClass: n.targetClass || "ALL"
+        }));
 
       state = {
         classes: Array.isArray(data.classes) && data.classes.length ? data.classes : ["Basic 8", "Basic 9"],
@@ -1377,7 +1436,11 @@
         hydrateStateFromSnapshot(snap.val());
       } else {
         state = getDefaultState();
-        set(rootRef, state).then(markSynced);
+        try {
+          set(rootRef, makeFirebaseSafe(state)).then(markSynced).catch(err => reportSaveError("initial database", err));
+        } catch (err) {
+          reportSaveError("initial database", err);
+        }
       }
     }).catch((err) => {
       console.error("Initial Firebase check error:", err);
@@ -2174,7 +2237,6 @@
       });
       if (assigned.includes(curAnaFilter)) tAnaFilter.value = curAnaFilter;
 
-      // Populate both Single-Add and Bulk-Import Class Selectors
       ["newQTargetClass", "bulkQTargetClass"].forEach(selId => {
         const sel = document.getElementById(selId);
         const curVal = sel.value;
@@ -2283,35 +2345,26 @@
       if (upper === "B") return 1;
       if (upper === "C") return 2;
       if (upper === "D") return 3;
-      if (["0", "1", "2", "3"].includes(s)) {
-        const n = Number(s);
-        // Support 1-4 if written as 1..4 when no 0 is used, or 0..3
-        return n;
-      }
+      if (["0", "1", "2", "3"].includes(s)) return Number(s);
       if (s === "4") return 3;
-      // Match option text directly if user put the full answer string
       const textIdx = optionsArr.findIndex(o => o.trim().toLowerCase() === s.toLowerCase());
       return textIdx >= 0 ? textIdx : 0;
     }
 
     function parseGiftQuestions(rawText, defaultTargetClass) {
-      // Remove comment lines starting with //
       const cleaned = rawText
         .split(/\r?\n/)
         .filter(line => !line.trim().startsWith("//"))
         .join("\n");
 
       const parsed = [];
-      // Match blocks: Question text { answer block }
       const blockRegex = /([^{}]+?)\{([^{}]+)\}/g;
       let match;
       while ((match = blockRegex.exec(cleaned)) !== null) {
         let qText = match[1].trim();
-        // Strip optional Moodle ::Title:: prefix and [html]/[markdown] tags
         qText = qText.replace(/^::.*?::\s*/s, "").replace(/^\[(html|markdown|plain|moodle)\]\s*/i, "").trim();
         const body = match[2].trim();
 
-        // Extract general feedback (####...) if present
         let sol = "Review the step-by-step concept for this question.";
         let choicesPart = body;
         const fbIndex = body.indexOf("####");
@@ -2320,14 +2373,12 @@
           choicesPart = body.slice(0, fbIndex).trim();
         }
 
-        // Tokenize choices starting with = (correct) or ~ (wrong)
         const choiceRegex = /([=~])\s*([^=~#]+)/g;
         const options = [];
         let ansIndex = 0;
         let cMatch;
         while ((cMatch = choiceRegex.exec(choicesPart)) !== null) {
           const prefix = cMatch[1];
-          // Strip optional inline option feedback (#...) or percentage weights (%100%)
           let optText = cMatch[2].split("#")[0].replace(/^%-?\d+(\.\d+)?%/, "").trim();
           if (!optText) continue;
           if (prefix === "=") ansIndex = options.length;
@@ -2455,7 +2506,6 @@
         };
         reader.readAsArrayBuffer(file);
       } else {
-        // Text-based quiz files: .gift, .txt (GIFT or Aiken), .json
         const reader = new FileReader();
         reader.onload = (evt) => {
           try {
@@ -2480,7 +2530,6 @@
                 });
               });
             } else {
-              // Try Moodle GIFT first if braces `{` and `}` exist; otherwise try Aiken format
               if (content.includes("{") && content.includes("}")) {
                 imported = parseGiftQuestions(content, selectedTargetClass);
               }
@@ -2675,7 +2724,7 @@
         del.textContent = "Delete";
         del.onclick = () => {
           if (state.questions.length <= 1) return alert("At least 1 question must remain.");
-          state.questions.splice(globalIdx, 1);
+          state.questions = state.questions.filter(item => item.id !== q.id);
           saveBranch("questions", state.questions);
           addLog(session.name, `Removed question from ${q.targetClass || "ALL"} bank`);
           renderTeacherDashboard();
@@ -2982,6 +3031,75 @@
       document.getElementById("editTeacherModal").classList.add("hidden");
     };
 
+    /* ---------------- RENAME USER MODAL ---------------- */
+    function openRenameUserModal(user) {
+      renamingUserId = user.id;
+      document.getElementById("renameUserModalTitle").textContent = `Rename ${user.role === "teacher" ? "Teacher" : "Student"}`;
+      document.getElementById("renameUserNameInput").value = user.name;
+
+      const classWrap = document.getElementById("renameUserClassWrap");
+      const classSel = document.getElementById("renameUserClassSelect");
+      if (user.role === "student") {
+        classWrap.classList.remove("hidden");
+        classSel.innerHTML = "";
+        state.classes.forEach(cls => {
+          const opt = document.createElement("option");
+          opt.value = cls;
+          opt.textContent = cls;
+          classSel.appendChild(opt);
+        });
+        if (user.code && state.classes.includes(user.code)) classSel.value = user.code;
+      } else {
+        classWrap.classList.add("hidden");
+      }
+
+      document.getElementById("renameUserModal").classList.remove("hidden");
+      setTimeout(() => document.getElementById("renameUserNameInput").focus(), 40);
+    }
+
+    document.getElementById("closeRenameUserModalBtn").onclick = () => {
+      renamingUserId = null;
+      document.getElementById("renameUserModal").classList.add("hidden");
+    };
+
+    document.getElementById("saveRenameUserBtn").onclick = () => {
+      if (!renamingUserId) return;
+      const targetUser = state.users.find(u => u.id === renamingUserId);
+      const newName = normalizeName(document.getElementById("renameUserNameInput").value);
+      if (!newName) return showToast("Please enter a valid name.", "error");
+
+      if (targetUser) {
+        const oldName = targetUser.name;
+        const oldClass = targetUser.code;
+        targetUser.name = newName;
+
+        let newClass = oldClass;
+        if (targetUser.role === "student") {
+          newClass = document.getElementById("renameUserClassSelect").value || oldClass;
+          targetUser.code = newClass;
+
+          let subsUpdated = false;
+          state.submissions.forEach(sub => {
+            if (normalizeName(sub.studentName).toLowerCase() === normalizeName(oldName).toLowerCase()) {
+              sub.studentName = newName;
+              if (newClass) sub.studentClass = newClass;
+              subsUpdated = true;
+            }
+          });
+          if (subsUpdated) saveBranch("submissions", state.submissions);
+        }
+
+        saveBranch("users", state.users);
+        addLog("Principal Admin", `Renamed ${targetUser.role}: "${oldName}" → "${newName}"`);
+        populateDropdowns();
+        renderAdminDashboard();
+        showToast(`Renamed to ${newName}`, "success");
+      }
+
+      renamingUserId = null;
+      document.getElementById("renameUserModal").classList.add("hidden");
+    };
+
     function renderAdminDashboard() {
       const students = state.users.filter(u => u.role === "student");
       const examSubs = state.submissions.filter(s => s.mode === "Exam");
@@ -3031,7 +3149,7 @@
 
       const tbody = document.getElementById("aUsersBody");
       tbody.innerHTML = "";
-      state.users.forEach((u, idx) => {
+      state.users.forEach((u) => {
         const tr = document.createElement("tr");
         const tdN = document.createElement("td"); tdN.textContent = u.name;
         const tdR = document.createElement("td"); tdR.textContent = u.role.toUpperCase();
@@ -3051,6 +3169,12 @@
         const tdA = document.createElement("td");
         tdA.style.display = "flex"; tdA.style.gap = "6px"; tdA.style.flexWrap = "wrap";
 
+        const renameBtn = document.createElement("button");
+        renameBtn.className = "btn btn-secondary btn-sm";
+        renameBtn.textContent = "Rename";
+        renameBtn.onclick = () => openRenameUserModal(u);
+        tdA.appendChild(renameBtn);
+
         if (u.role === "teacher") {
           const clsBtn = document.createElement("button");
           clsBtn.className = "btn btn-primary btn-sm";
@@ -3063,9 +3187,11 @@
         tog.className = "btn btn-outline btn-sm";
         tog.textContent = u.active ? "Suspend" : "Activate";
         tog.onclick = () => {
-          u.active = !u.active;
+          const target = state.users.find(item => item.id === u.id);
+          if (!target) return;
+          target.active = !target.active;
           saveBranch("users", state.users);
-          addLog("Principal Admin", `${u.active ? "Activated" : "Suspended"} ${u.name}`);
+          addLog("Principal Admin", `${target.active ? "Activated" : "Suspended"} ${target.name}`);
           renderAdminDashboard();
         };
         tdA.appendChild(tog);
@@ -3075,10 +3201,12 @@
           rst.className = "btn btn-secondary btn-sm";
           rst.textContent = "Reset Pass";
           rst.onclick = () => {
-            u.passwordHash = "";
+            const target = state.users.find(item => item.id === u.id);
+            if (!target) return;
+            target.passwordHash = "";
             saveBranch("users", state.users);
-            addLog("Principal Admin", `Reset password for ${u.name} to default teacher password`);
-            showToast(`${u.name}'s password reset to Default Teacher Password`, "info");
+            addLog("Principal Admin", `Reset password for ${target.name} to default teacher password`);
+            showToast(`${target.name}'s password reset to Default Teacher Password`, "info");
           };
           tdA.appendChild(rst);
         }
@@ -3087,11 +3215,13 @@
         del.className = "btn btn-danger btn-sm";
         del.textContent = "Remove";
         del.onclick = () => {
-          state.users.splice(idx, 1);
+          if (!confirm(`Remove ${u.name} (${u.role}) permanently from the portal?`)) return;
+          state.users = state.users.filter(item => item.id !== u.id);
           saveBranch("users", state.users);
           addLog("Principal Admin", `Removed user ${u.name}`);
           populateDropdowns();
           renderAdminDashboard();
+          showToast(`Removed ${u.name}`, "info");
         };
         tdA.appendChild(del);
         tr.append(tdN, tdR, tdC, tdS, tdA);
@@ -3159,18 +3289,22 @@
       const role = document.getElementById("aNewRole").value;
       if (!name) return alert("Enter a full name.");
 
+      let logDetail;
       if (role === "student") {
         const cls = document.getElementById("aNewClassSelect").value || state.classes[0] || "Unassigned";
         state.users.push({ id: "u" + Date.now(), name, role: "student", code: cls, active: true });
-        addLog("Principal Admin", `Added student: ${name} (${cls})`);
+        logDetail = `student: ${name} (${cls})`;
       } else {
         const staffCode = normalizeName(document.getElementById("aNewStaffCode").value) || "TCH-NEW";
         const assignedClasses = Array.from(document.querySelectorAll("#aNewTeacherClassCheckboxes input:checked")).map(i => i.value);
         state.users.push({ id: "t" + Date.now(), name, role: "teacher", code: staffCode, assignedClasses, passwordHash: "", active: true });
-        addLog("Principal Admin", `Added teacher: ${name} (${staffCode}) → Classes: ${assignedClasses.join(", ") || "None"}`);
+        logDetail = `teacher: ${name} (${staffCode}) → Classes: ${assignedClasses.join(", ") || "None"}`;
       }
 
+      // Save first: addLog() triggers an onValue echo that rehydrates state, so logging
+      // before the users write would discard the new account from the in-memory array.
       saveBranch("users", state.users);
+      addLog("Principal Admin", `Added ${logDetail}`);
       document.getElementById("aNewName").value = "";
       document.getElementById("aNewStaffCode").value = "";
       populateDropdowns();
@@ -3205,7 +3339,11 @@
     document.getElementById("resetDemoBtn").onclick = () => {
       if (!confirm("Reset all submissions, classes, users, and custom questions back to default database?")) return;
       state = getDefaultState();
-      set(rootRef, state).then(markSynced);
+      try {
+        set(rootRef, makeFirebaseSafe(state)).then(markSynced).catch(err => reportSaveError("database reset", err));
+      } catch (err) {
+        reportSaveError("database reset", err);
+      }
       populateDropdowns();
       renderAdminDashboard();
       showToast("Database reset to default", "info");
